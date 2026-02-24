@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reservation Manager UI</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --line: #d8deea;
+        --text: #1f2a44;
+        --muted: #5a6785;
+        --primary: #2f6bff;
+        --room: #4f7cff;
+        --device: #11a36a;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: var(--text); background: var(--bg); }
+      .container { max-width: 1500px; margin: 0 auto; padding: 24px 20px 34px; }
+      .title { text-align: center; font-size: 38px; font-weight: 800; margin: 6px 0 14px; letter-spacing: -0.5px; }
+      .search-area { display: flex; justify-content: center; margin-bottom: 16px; }
+      .search-box { width: min(980px, 100%); background: var(--panel); border-radius: 9999px; box-shadow: 0 8px 24px rgba(31, 42, 68, 0.12); border: 1px solid var(--line); display: flex; align-items: center; padding: 10px 12px 10px 20px; gap: 10px; }
+      .search-box input { border: none; outline: none; flex: 1; font-size: 16px; background: transparent; }
+      .search-box button { border: none; background: var(--primary); color: #fff; border-radius: 9999px; padding: 10px 18px; cursor: pointer; font-weight: 600; }
+      .message { text-align: center; font-size: 14px; color: var(--muted); min-height: 20px; margin-bottom: 10px; }
+      .range-info { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+      .table-now { text-align: left; font-size: 13px; color: var(--muted); margin: 2px 0 8px; font-weight: 600; }
+      .result-card { display: none; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--primary); border-radius: 10px; padding: 12px 14px; margin: 0 auto 14px; max-width: 980px; }
+      .result-card h3 { margin: 0 0 8px; font-size: 15px; }
+      .result-card p { margin: 4px 0; font-size: 13px; color: var(--text); }
+      .result-card .meta { color: var(--muted); }
+      .result-card button { margin-top: 8px; border: 1px solid var(--line); background: #fff; color: var(--text); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 12px; }
+      .result-card button:hover { border-color: var(--primary); }
+
+      .period-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin: 0 0 12px;
+      }
+
+      .period-buttons {
+        display: flex;
+        gap: 8px;
+      }
+
+      .period-btn {
+        border: 1px solid var(--line);
+        border-radius: 9999px;
+        background: #fff;
+        color: var(--text);
+        padding: 8px 14px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .period-btn.active {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+      }
+
+      .option-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 0 auto 14px; max-width: 980px; }
+      .option-title { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+      .option-list { display: flex; flex-wrap: wrap; gap: 8px; }
+      .option-btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 8px 10px; cursor: pointer; color: var(--text); }
+      .option-btn:hover { border-color: var(--primary); }
+
+      .sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+      .panel h2 { margin: 0 0 12px; font-size: 17px; }
+
+      .timeline-header { display: grid; grid-template-columns: 220px 1fr; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+      .ticks { position: relative; height: 16px; }
+      .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; font-size: 11px; }
+
+      .resource-row { display: grid; grid-template-columns: 220px 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+      .resource-label { font-size: 13px; line-height: 1.2; }
+      .resource-label small { color: var(--muted); }
+
+      .timeline { position: relative; height: 30px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #fbfcff; }
+      .timeline-boundary { position: absolute; top: 0; bottom: 0; width: 1px; pointer-events: none; }
+      .timeline-boundary.day { background: rgba(47, 107, 255, 0.35); z-index: 4; }
+      .timeline-boundary.edge { background: rgba(47, 107, 255, 0.95); width: 2px; z-index: 5; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7); }
+      .blocked { position: absolute; top: 0; bottom: 0; z-index: 1; background: repeating-linear-gradient(-45deg, rgba(204, 77, 77, 0.18), rgba(204, 77, 77, 0.18) 6px, rgba(204, 77, 77, 0.26) 6px, rgba(204, 77, 77, 0.26) 12px); }
+      .bar { position: absolute; top: 5px; height: 18px; border-radius: 4px; font-size: 10px; color: #fff; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 2px solid rgba(255, 255, 255, 0.95); border-right: 2px solid rgba(255, 255, 255, 0.95); z-index: 3; }
+      .bar.room { background: var(--room); }
+      .bar.device { background: var(--device); }
+
+      @media (max-width: 1250px) { .sections { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <h1 class="title">스마트 공용 자원 예약 시스템 (자연어)</h1>
+      <div class="search-area">
+        <form id="reserveForm" class="search-box">
+          <input id="reserveInput" placeholder="예: 회의실1 2026-02-25 10:00~11:00 예약" />
+          <button type="submit">예약 요청</button>
+        </form>
+      </div>
+      <div id="message" class="message"></div>
+      <div id="rangeInfo" class="range-info"></div>
+
+      <section id="resultCard" class="result-card" aria-live="polite">
+        <h3>예약 결과 카드</h3>
+        <p id="resultCardResource"></p>
+        <p id="resultCardTime"></p>
+        <p id="resultCardStrategy" class="meta"></p>
+        <button type="button" id="resultCardCopyBtn">결과 복사</button>
+      </section>
+
+      <div class="period-toolbar">
+        <div class="period-buttons">
+          <button type="button" class="period-btn active" data-period="day">하루</button>
+          <button type="button" class="period-btn" data-period="week">일주일</button>
+          <button type="button" class="period-btn" data-period="month">한달</button>
+        </div>
+      </div>
+
+      <div id="optionPanel" class="option-panel" style="display:none;">
+        <div class="option-title">회피 예약 가능한 방법을 선택하세요 (최대 3개)</div>
+        <div id="optionList" class="option-list"></div>
+      </div>
+
+      <div id="currentTimeInfo" class="table-now"></div>
+
+      <section class="sections">
+        <article class="panel">
+          <h2>회의실 (예약 적은 순)</h2>
+          <div class="timeline-header"><div>리소스 / 예약·가능·불가 슬롯</div><div class="ticks" id="roomTicks"></div></div>
+          <div id="rooms"></div>
+        </article>
+        <article class="panel">
+          <h2>테스트단말기 (예약 적은 순)</h2>
+          <div class="timeline-header"><div>리소스 / 예약·가능·불가 슬롯</div><div class="ticks" id="deviceTicks"></div></div>
+          <div id="devices"></div>
+        </article>
+      </section>
+    </main>
+
+    <script>
+      const state = {
+        windowStart: null,
+        windowEnd: null,
+        blockedIntervals: [],
+        pendingText: "",
+        pendingOptions: [],
+        period: "day",
+        latestResultText: "",
+      };
+
+      function toDate(value) { return new Date(value); }
+      function formatDateTimeWithYear(value) {
+        const date = toDate(value);
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        const h = String(date.getHours()).padStart(2, "0");
+        const min = String(date.getMinutes()).padStart(2, "0");
+        return `${y}-${m}-${d} ${h}:${min}`;
+      }
+
+      function formatDateOnly(value) {
+        const date = toDate(value);
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+
+      function formatTime(value) {
+        const date = toDate(value);
+        const h = String(date.getHours()).padStart(2, "0");
+        const min = String(date.getMinutes()).padStart(2, "0");
+        return `${h}:${min}`;
+      }
+
+      function nextHourRange(base = new Date()) {
+        const start = new Date(base.getTime());
+        start.setMinutes(0, 0, 0);
+        start.setHours(start.getHours() + 1);
+        const end = new Date(start.getTime() + 60 * 60 * 1000);
+        return { start, end };
+      }
+
+      function updateDynamicExample() {
+        const input = document.getElementById("reserveInput");
+        const { start, end } = nextHourRange(new Date());
+        input.placeholder = `예: 회의실1 ${formatDateOnly(start)} ${formatTime(start)}~${formatTime(end)} 예약`;
+      }
+
+      function updateCurrentTimeInfo() {
+        const node = document.getElementById("currentTimeInfo");
+        node.textContent = `현재 시간: ${formatDateTimeWithYear(new Date())}`;
+      }
+
+      function formatTooltipRange(startValue, endValue) {
+        const startDate = toDate(startValue);
+        const endDate = toDate(endValue);
+        const sameDay =
+          startDate.getFullYear() === endDate.getFullYear() &&
+          startDate.getMonth() === endDate.getMonth() &&
+          startDate.getDate() === endDate.getDate();
+        if (sameDay) {
+          return `${formatDateTimeWithYear(startValue)}~${formatTime(endValue)}`;
+        }
+        return `${formatDateTimeWithYear(startValue)}~${formatDateTimeWithYear(endValue)}`;
+      }
+
+      function drawTicks(containerId, start, end) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        const segments = buildDaySegments(start, end);
+        const containerWidth = Math.max(1, container.clientWidth || 1);
+        const minLabelPixelGap = state.period === "month" ? 92 : 70;
+        const widthBasedMax = Math.max(1, Math.floor(containerWidth / minLabelPixelGap));
+        const maxLabelsByPeriod = { day: 1, week: 7, month: 6 };
+        const maxLabels = Math.min(maxLabelsByPeriod[state.period] || 7, widthBasedMax);
+        const stride = Math.max(1, Math.ceil(segments.length / maxLabels));
+        const span = end.getTime() - start.getTime();
+        segments.forEach((segment, index) => {
+          if (index % stride !== 0) {
+            return;
+          }
+          const midpoint = segment.start.getTime() + ((segment.end.getTime() - segment.start.getTime()) / 2);
+          const ratio = (midpoint - start.getTime()) / span;
+          const item = document.createElement("span");
+          item.style.left = `${ratio * 100}%`;
+          item.textContent = `${segment.start.getFullYear()}/${String(segment.start.getMonth() + 1).padStart(2, "0")}/${String(segment.start.getDate()).padStart(2, "0")}`;
+          container.appendChild(item);
+        });
+      }
+
+      function buildDaySegments(start, end) {
+        const dayMillis = 24 * 60 * 60 * 1000;
+        const segments = [];
+        let cursor = new Date(start.getTime());
+
+        while (cursor.getTime() < end.getTime()) {
+          const segmentStart = new Date(cursor.getTime());
+          const segmentEndTime = Math.min(end.getTime(), segmentStart.getTime() + dayMillis);
+          const segmentEnd = new Date(segmentEndTime);
+          segments.push({ start: segmentStart, end: segmentEnd });
+          cursor = new Date(segmentEnd.getTime());
+        }
+
+        return segments;
+      }
+
+      function renderRows(containerId, rows, kind) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+
+        const rangeStart = state.windowStart.getTime();
+        const rangeEnd = state.windowEnd.getTime();
+        const total = rangeEnd - rangeStart;
+
+        rows.forEach((row) => {
+          const rowNode = document.createElement("div");
+          rowNode.className = "resource-row";
+
+          const label = document.createElement("div");
+          label.className = "resource-label";
+          const details = [`예약 ${row.reservation_count}건`];
+          const availableSlots = Number(row.available_slots || 0);
+          const unavailableSlots = Number(row.unavailable_slots || 0);
+          if (availableSlots > 0) {
+            details.push(`가능 ${availableSlots}슬롯`);
+          }
+          if (unavailableSlots > 0) {
+            details.push(`불가 ${unavailableSlots}슬롯`);
+          }
+          label.innerHTML = `${row.resource}<br/><small>${details.join(" | ")}</small>`;
+
+          const timeline = document.createElement("div");
+          timeline.className = "timeline";
+
+          const segments = buildDaySegments(state.windowStart, state.windowEnd);
+          const boundaryTimes = [rangeStart, ...segments.map((segment) => segment.end.getTime())];
+          boundaryTimes.forEach((point, index) => {
+            const line = document.createElement("div");
+            const left = ((point - rangeStart) / total) * 100;
+            const isEdge = index === 0 || index === boundaryTimes.length - 1;
+            line.className = `timeline-boundary ${isEdge ? "edge" : "day"}`;
+            line.style.left = `${left}%`;
+            if (index === boundaryTimes.length - 1) {
+              line.style.transform = "translateX(-100%)";
+            }
+            timeline.appendChild(line);
+          });
+
+          state.blockedIntervals.forEach((interval) => {
+            const blockedStart = toDate(interval.start).getTime();
+            const blockedEnd = toDate(interval.end).getTime();
+            const left = Math.max(0, ((blockedStart - rangeStart) / total) * 100);
+            const width = Math.max(0, ((blockedEnd - blockedStart) / total) * 100);
+            const blocked = document.createElement("div");
+            blocked.className = "blocked";
+            blocked.style.left = `${left}%`;
+            blocked.style.width = `${width}%`;
+            blocked.title = "예약 불가 구간(주말/공휴일)";
+            timeline.appendChild(blocked);
+          });
+
+          row.reservations.forEach((reservation) => {
+            const start = toDate(reservation.start).getTime();
+            const end = toDate(reservation.end).getTime();
+            const left = Math.max(0, ((start - rangeStart) / total) * 100);
+            const width = Math.max(0.8, ((end - start) / total) * 100);
+            const bar = document.createElement("div");
+            bar.className = `bar ${kind}`;
+            bar.style.left = `${left}%`;
+            bar.style.width = `${width}%`;
+            const startLabel = formatDateTimeWithYear(reservation.start);
+            const endLabel = formatDateTimeWithYear(reservation.end);
+            const tooltipRange = formatTooltipRange(reservation.start, reservation.end);
+            const requestText = (reservation.request_text || "").trim();
+            if (requestText) {
+              bar.title = `${requestText}\n${row.resource} ${tooltipRange}`;
+            } else {
+              bar.title = `${row.resource} ${tooltipRange}\n예약 ID: ${reservation.reservation_id}`;
+            }
+            bar.textContent = `${startLabel}~${endLabel}`;
+            timeline.appendChild(bar);
+          });
+
+          rowNode.appendChild(label);
+          rowNode.appendChild(timeline);
+          container.appendChild(rowNode);
+        });
+      }
+
+      function setMessage(text, isError = false) {
+        const node = document.getElementById("message");
+        node.textContent = text;
+        node.style.color = isError ? "#c62828" : "#2b5fab";
+      }
+
+      function hideResultCard() {
+        const card = document.getElementById("resultCard");
+        card.style.display = "none";
+      }
+
+      function renderResultCard(strategy, reservation) {
+        const card = document.getElementById("resultCard");
+        const resourceText = `자원: ${reservation.resource}`;
+        const timeText = `시간: ${formatDateTimeWithYear(reservation.start)} ~ ${formatDateTimeWithYear(reservation.end)}`;
+        const strategyText = `처리 방식: ${strategy}`;
+        document.getElementById("resultCardResource").textContent = resourceText;
+        document.getElementById("resultCardTime").textContent = timeText;
+        document.getElementById("resultCardStrategy").textContent = strategyText;
+        state.latestResultText = `[예약 결과]\n${resourceText}\n${timeText}\n${strategyText}`;
+        card.style.display = "block";
+      }
+
+      async function copyResultCard() {
+        if (!state.latestResultText) {
+          setMessage("복사할 예약 결과가 없습니다.", true);
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(state.latestResultText);
+          setMessage("예약 결과를 클립보드에 복사했습니다.");
+        } catch {
+          setMessage("클립보드 복사에 실패했습니다.", true);
+        }
+      }
+
+      function updatePeriodButtons() {
+        document.querySelectorAll(".period-btn").forEach((button) => {
+          if (button.dataset.period === state.period) {
+            button.classList.add("active");
+          } else {
+            button.classList.remove("active");
+          }
+        });
+      }
+
+      function hideOptions() {
+        state.pendingOptions = [];
+        const panel = document.getElementById("optionPanel");
+        const list = document.getElementById("optionList");
+        list.innerHTML = "";
+        panel.style.display = "none";
+      }
+
+      function renderOptions(options, inputText) {
+        state.pendingText = inputText;
+        state.pendingOptions = options;
+
+        const panel = document.getElementById("optionPanel");
+        const list = document.getElementById("optionList");
+        list.innerHTML = "";
+
+        options.forEach((option, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "option-btn";
+          const startText = formatDateTimeWithYear(option.start);
+          const endText = formatDateTimeWithYear(option.end);
+          button.textContent = `${index + 1}) ${option.label} | ${option.resource} | ${startText}~${endText}`;
+          button.addEventListener("click", () => commitReservationOption(option));
+          list.appendChild(button);
+        });
+
+        panel.style.display = "block";
+      }
+
+      async function loadSchedule() {
+        const response = await fetch(`/api/schedule?period=${state.period}`);
+        const payload = await response.json();
+        state.windowStart = toDate(payload.window_start);
+        state.windowEnd = toDate(payload.window_end);
+        state.blockedIntervals = payload.blocked_intervals || [];
+
+        const rangeInfo = document.getElementById("rangeInfo");
+        rangeInfo.textContent = `표시 기간: ${formatDateTimeWithYear(payload.window_start)} ~ ${formatDateTimeWithYear(payload.window_end)} (${payload.period})`;
+
+        drawTicks("roomTicks", state.windowStart, state.windowEnd);
+        drawTicks("deviceTicks", state.windowStart, state.windowEnd);
+        renderRows("rooms", payload.rooms, "room");
+        renderRows("devices", payload.devices, "device");
+      }
+
+      async function commitReservationOption(option) {
+        const response = await fetch("/api/reserve/commit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: state.pendingText, option }),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.ok) {
+          hideResultCard();
+          setMessage(payload.message || "예약 확정 실패", true);
+          return;
+        }
+
+        const reserved = `${payload.reservation.resource} ${formatDateTimeWithYear(payload.reservation.start)}~${formatDateTimeWithYear(payload.reservation.end)}`;
+        setMessage(`예약 완료 (${payload.strategy}) - ${reserved}`);
+        renderResultCard(payload.strategy, payload.reservation);
+        hideOptions();
+        document.getElementById("reserveInput").value = "";
+        await loadSchedule();
+      }
+
+      async function submitReservation(event) {
+        event.preventDefault();
+        const input = document.getElementById("reserveInput");
+        const text = input.value.trim();
+        if (!text) {
+          setMessage("예약 요청 문장을 입력해주세요.", true);
+          return;
+        }
+
+        const response = await fetch("/api/reserve/options", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.ok) {
+          hideOptions();
+          hideResultCard();
+          setMessage(payload.message || "예약 처리 실패", true);
+          return;
+        }
+
+        renderOptions(payload.options || [], text);
+        setMessage("회피 예약 방법을 선택해주세요.");
+      }
+
+      document.querySelectorAll(".period-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+          state.period = button.dataset.period;
+          updatePeriodButtons();
+          await loadSchedule();
+        });
+      });
+
+      document.getElementById("reserveForm").addEventListener("submit", submitReservation);
+      document.getElementById("resultCardCopyBtn").addEventListener("click", copyResultCard);
+      updateDynamicExample();
+      updateCurrentTimeInfo();
+      hideResultCard();
+      setInterval(() => {
+        updateDynamicExample();
+        updateCurrentTimeInfo();
+      }, 60 * 1000);
+      updatePeriodButtons();
+      loadSchedule().catch(() => setMessage("스케줄을 불러오지 못했습니다.", true));
+    </script>
+  </body>
+</html>

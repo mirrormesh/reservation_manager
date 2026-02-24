@@ -6,6 +6,7 @@ const {
   canReserve,
   parseReservationRequest,
   canReserveFromText,
+  normalizeReservationRange,
 } = require('../reservationParser');
 
 test('hasTimeOverlap: boundary-touching does not overlap', () => {
@@ -56,4 +57,13 @@ test('canReserve: non-overlap returns true', () => {
     canReserve(new Date('2026-02-24T11:00:00'), new Date('2026-02-24T12:00:00'), existingReservations),
     true
   );
+});
+
+test('normalizeReservationRange: floors start and ceils end to 10-minute increments', () => {
+  const start = new Date('2026-02-24T10:07:00');
+  const end = new Date('2026-02-24T11:01:00');
+  const normalized = normalizeReservationRange(start, end);
+
+  assert.equal(normalized.start.toISOString(), new Date('2026-02-24T10:00:00').toISOString());
+  assert.equal(normalized.end.toISOString(), new Date('2026-02-24T11:10:00').toISOString());
 });

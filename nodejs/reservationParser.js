@@ -22,6 +22,36 @@ function canReserve(newStart, newEnd, existingReservations) {
   );
 }
 
+function floorToTenMinutes(dateValue) {
+  const result = new Date(dateValue.getTime());
+  result.setSeconds(0, 0);
+  result.setMinutes(Math.floor(result.getMinutes() / 10) * 10);
+  return result;
+}
+
+function ceilToTenMinutes(dateValue) {
+  const result = new Date(dateValue.getTime());
+  const hasSubMinute = result.getSeconds() > 0 || result.getMilliseconds() > 0;
+  result.setSeconds(0, 0);
+
+  const minute = result.getMinutes();
+  const remainder = minute % 10;
+  if (remainder === 0 && !hasSubMinute) {
+    return result;
+  }
+
+  const minutesToAdd = remainder === 0 ? 10 : (10 - remainder);
+  result.setMinutes(minute + minutesToAdd);
+  return result;
+}
+
+function normalizeReservationRange(start, end) {
+  return {
+    start: floorToTenMinutes(start),
+    end: ceilToTenMinutes(end),
+  };
+}
+
 function parseReservationRequest(text) {
   if (!text || !text.trim()) {
     throw new Error('text must not be empty');
@@ -45,7 +75,9 @@ function parseReservationRequest(text) {
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     throw new Error('Failed to parse date or time from text');
   }
-  if (start >= end) {
+  const normalized = normalizeReservationRange(start, end);
+
+  if (normalized.start >= normalized.end) {
     throw new Error('start time must be earlier than end time');
   }
 
@@ -63,7 +95,7 @@ function parseReservationRequest(text) {
     resource = null;
   }
 
-  return { resource, start, end, rawText: text };
+  return { resource, start: normalized.start, end: normalized.end, rawText: text };
 }
 
 function canReserveFromText(text, existingReservations) {
@@ -76,4 +108,5 @@ module.exports = {
   canReserve,
   parseReservationRequest,
   canReserveFromText,
+  normalizeReservationRange,
 };
