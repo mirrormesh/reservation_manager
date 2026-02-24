@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
+  <style>
+    .title { font: bold 22px 'Segoe UI', Arial, sans-serif; fill: #1f2a44; }
+    .subtitle { font: 15px 'Segoe UI', Arial, sans-serif; fill: #1f2a44; }
+    .label { font: 13px 'Segoe UI', Arial, sans-serif; fill: #1f2a44; }
+    .small { font: 12px 'Segoe UI', Arial, sans-serif; fill: #374259; }
+    .box { fill: #f8fbff; stroke: #4f6cb7; stroke-width: 2; rx: 12; ry: 12; }
+    .box-green { fill: #f5fff9; stroke: #1a9b64; stroke-width: 2; rx: 12; ry: 12; }
+    .box-orange { fill: #fff9f3; stroke: #d97917; stroke-width: 2; rx: 12; ry: 12; }
+    .arrow { stroke: #5a6785; stroke-width: 2; marker-end: url(#arrowHead); }
+  </style>
+  <defs>
+    <marker id="arrowHead" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#5a6785" />
+    </marker>
+  </defs>
+
+  <text x="40" y="40" class="title">Reservation Manager 시스템 구조</text>
+
+  <rect x="60" y="70" width="320" height="150" class="box" />
+  <text x="80" y="105" class="subtitle">UI Frontends</text>
+  <text x="80" y="135" class="label">• Python Flask UI (`run_windows_python.bat`)</text>
+  <text x="80" y="160" class="label">• Node.js UI (`run_windows_node.bat` → `nodejs/server.js`)</text>
+  <text x="80" y="185" class="small">동일 HTML 템플릿 공유, Node UI는 `/parse` 데모 제공</text>
+
+  <rect x="520" y="70" width="320" height="150" class="box-green" />
+  <text x="540" y="105" class="subtitle">Automations + Tests</text>
+  <text x="540" y="135" class="label">• Python 런처: 설치→venv→의존성→테스트→UI</text>
+  <text x="540" y="160" class="label">• Node 런처: 휴대용 Node→Python 준비→테스트→API 서버</text>
+  <text x="540" y="185" class="label">• Tests: `python -m unittest`, `node --test`</text>
+
+  <rect x="60" y="260" width="320" height="170" class="box" />
+  <text x="80" y="295" class="subtitle">Python Flask API</text>
+  <text x="80" y="325" class="label">• 엔드포인트: `/api/schedule`, `/api/reserve/*`, `/api/my-reservations`</text>
+  <text x="80" y="350" class="label">• 자연어 파싱 · 겹침 판정 · 자기예약 병합 로직</text>
+  <text x="80" y="375" class="label">• UI와 Node 브리지 모두 동일 API 사용</text>
+
+  <rect x="520" y="260" width="320" height="170" class="box-orange" />
+  <text x="540" y="295" class="subtitle">Node↔Python Bridge</text>
+  <text x="540" y="325" class="label">• `scripts/node_python_bridge.py`</text>
+  <text x="540" y="350" class="label">• Node 서버가 `spawnSync`로 Python API 호출</text>
+  <text x="540" y="375" class="label">• 동일 응답 포맷 유지로 UI 정합성 확보</text>
+
+  <rect x="240" y="450" width="420" height="70" class="box-green" />
+  <text x="260" y="485" class="subtitle">YAML Data Store</text>
+  <text x="260" y="510" class="label">`ReservationYamlRepository` → active/closed/events YAML 파일 단일 소스</text>
+
+  <line x1="220" y1="220" x2="220" y2="260" class="arrow" />
+  <line x1="220" y1="430" x2="450" y2="430" class="arrow" />
+  <line x1="450" y1="430" x2="450" y2="450" class="arrow" />
+  <line x1="680" y1="220" x2="680" y2="260" class="arrow" />
+  <line x1="450" y1="430" x2="680" y2="430" class="arrow" />
+</svg>

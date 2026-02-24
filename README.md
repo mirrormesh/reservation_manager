@@ -47,6 +47,17 @@ YAML 기반 자원 예약 시스템입니다. 회의실(10개)과 테스트단�
 - `TEST_DATA_GENERATED_LARGE`
 - `YAML_RECOVERED`
 
+## 시스템 구조
+
+- **UI 프런트엔드**: Python Flask UI(`run_windows_python.bat`)와 Node.js UI(`nodejs/server.js`)가 동일 템플릿을 공유하며, Node UI에는 `/parse` 데모 페이지가 추가됩니다.
+- **API 계층**: Python Flask 앱(`reservation_manager/web_app.py`)이 `/api/schedule`, `/api/reserve/*`, `/api/my-reservations`를 직접 처리하고 모든 비즈니스 로직을 담당합니다.
+- **브리지 로직**: Node 서버는 `scripts/node_python_bridge.py`를 `spawnSync`로 실행해 Python API를 프록시하므로, Node UI 요청도 최종적으로 Python 백엔드를 거칩니다.
+- **데이터 저장소**: `/data` 폴더의 YAML 파일(활성/마감 예약 + 이벤트 로그)이 단일 소스로 사용되며 `ReservationYamlRepository`가 읽기/쓰기, 정책, 시드 데이터를 관리합니다.
+- **자동화 스크립트**: `run_windows_python.bat`은 Python 설치→가상환경→의존성→테스트→서버 기동을, `run_windows_node.bat`은 휴대용 Node 설치 후 Python 준비·테스트·Node 테스트·서버 기동을 담당합니다.
+- **테스트 체계**: Python 단위 테스트(`python -m unittest`)와 Node 파서 테스트(`node --test nodejs/test/*.test.js`)를 분리 실행해 양쪽 구현의 정합성을 지속적으로 검증합니다.
+
+![시스템 구조 다이어그램](docs/system_architecture.svg)
+
 ## UI 기능 요약
 
 - Google 스타일 검색형 입력창
