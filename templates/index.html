@@ -23,6 +23,9 @@
       .search-box { width: min(980px, 100%); background: var(--panel); border-radius: 9999px; box-shadow: 0 8px 24px rgba(31, 42, 68, 0.12); border: 1px solid var(--line); display: flex; align-items: center; padding: 10px 12px 10px 20px; gap: 10px; }
       .search-box input { border: none; outline: none; flex: 1; font-size: 16px; background: transparent; }
       .search-box button { border: none; background: var(--primary); color: #fff; border-radius: 9999px; padding: 10px 18px; cursor: pointer; font-weight: 600; }
+      .peer-link { text-align: center; font-size: 13px; color: var(--muted); margin: -6px 0 10px; min-height: 18px; }
+      .peer-link a { color: var(--primary); text-decoration: none; font-weight: 600; }
+      .peer-link a:hover { text-decoration: underline; }
       .message { text-align: center; font-size: 14px; color: var(--muted); min-height: 20px; margin-bottom: 10px; }
       .range-info { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
       .table-now { text-align: left; font-size: 13px; color: var(--muted); margin: 2px 0 8px; font-weight: 600; }
@@ -75,8 +78,10 @@
       .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; font-size: 11px; }
 
       .resource-row { display: grid; grid-template-columns: 220px 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
-      .resource-label { font-size: 13px; line-height: 1.2; }
+      .resource-label { font-size: 13px; line-height: 1.2; border-radius: 8px; padding: 6px 8px; border: 1px solid transparent; }
       .resource-label small { color: var(--muted); }
+      .resource-label.occupied-room { background: rgba(79, 124, 255, 0.14); border-color: rgba(79, 124, 255, 0.42); }
+      .resource-label.occupied-device { background: rgba(17, 163, 106, 0.14); border-color: rgba(17, 163, 106, 0.42); }
 
       .timeline { position: relative; height: 30px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #fbfcff; }
       .timeline-boundary { position: absolute; top: 0; bottom: 0; width: 1px; pointer-events: none; }
@@ -92,13 +97,14 @@
   </head>
   <body>
     <main class="container">
-      <h1 class="title">스마트 공용 자원 예약 시스템 (자연어)</h1>
+      <h1 class="title">스마트 공용 자원 예약 시스템 (자연어 · Python Frontend)</h1>
       <div class="search-area">
         <form id="reserveForm" class="search-box">
           <input id="reserveInput" placeholder="예: 회의실1 2026-02-25 10:00~11:00 예약" />
           <button type="submit">예약 요청</button>
         </form>
       </div>
+      <div id="peerLinkInfo" class="peer-link" style="display:none;"></div>
       <div id="message" class="message"></div>
       <div id="rangeInfo" class="range-info"></div>
 
@@ -148,7 +154,91 @@
         pendingOptions: [],
         period: "day",
         latestResultText: "",
+        apiBase: "",
       };
+
+      function normalizeApiBase(rawValue) {
+        const value = String(rawValue || "").trim();
+        if (!value) {
+          return "";
+        }
+        return value.replace(/\/+$/, "");
+      }
+
+      function getApiBaseFromQuery() {
+        const params = new URLSearchParams(window.location.search || "");
+        return normalizeApiBase(params.get("apiBase") || "");
+      }
+
+      function apiUrl(path) {
+        if (state.apiBase) {
+          return `${state.apiBase}${path}`;
+        }
+        return path;
+      }
+
+      function getCurrentFrontendKind() {
+        const titleNode = document.querySelector(".title");
+        const titleText = (titleNode?.textContent || "").trim();
+        if (titleText.includes("Node.js Frontend")) {
+          return "node";
+        }
+        if (titleText.includes("Python Frontend")) {
+          return "python";
+        }
+        return "unknown";
+      }
+
+      function getPeerUiUrl(currentKind) {
+        if (currentKind === "python") {
+          return `${window.location.protocol}//${window.location.hostname}:3000/`;
+        }
+        if (currentKind === "node") {
+          return `${window.location.protocol}//${window.location.hostname}:5000/`;
+        }
+        return "";
+      }
+
+      function hidePeerLink() {
+        const node = document.getElementById("peerLinkInfo");
+        node.style.display = "none";
+        node.innerHTML = "";
+      }
+
+      function renderPeerLink(currentKind, peerUrl) {
+        const node = document.getElementById("peerLinkInfo");
+        const label = currentKind === "python" ? "Node.js UI" : "Python UI";
+        node.innerHTML = `비교 실행 가능한 ${label}가 감지되었습니다. <a href="${peerUrl}" target="_blank" rel="noopener noreferrer">${label} 열기 (새 탭)</a>`;
+        node.style.display = "block";
+      }
+
+      async function refreshPeerLink() {
+        const currentKind = getCurrentFrontendKind();
+        const peerUrl = getPeerUiUrl(currentKind);
+        if (!peerUrl) {
+          hidePeerLink();
+          return;
+        }
+
+        try {
+          const response = await fetch(peerUrl, { method: "GET" });
+          if (!response.ok) {
+            hidePeerLink();
+            return;
+          }
+
+          const html = await response.text();
+          const expectedMarker = currentKind === "python" ? "Node.js Frontend" : "Python Frontend";
+          if (!html.includes(expectedMarker)) {
+            hidePeerLink();
+            return;
+          }
+
+          renderPeerLink(currentKind, peerUrl);
+        } catch {
+          hidePeerLink();
+        }
+      }
 
       function toDate(value) { return new Date(value); }
       function formatDateTimeWithYear(value) {
@@ -256,15 +346,31 @@
         const rangeEnd = state.windowEnd.getTime();
         const total = rangeEnd - rangeStart;
 
+        function occupancyToColor(kindValue, occupancy) {
+          const clamped = Math.max(0, Math.min(1, Number.isFinite(occupancy) ? occupancy : 0));
+          const alpha = 0.28 + (clamped * 0.72);
+          if (kindValue === "room") {
+            return `rgba(79, 124, 255, ${alpha.toFixed(3)})`;
+          }
+          return `rgba(17, 163, 106, ${alpha.toFixed(3)})`;
+        }
+
         rows.forEach((row) => {
           const rowNode = document.createElement("div");
           rowNode.className = "resource-row";
+          const occupancyRate = Number(row.occupancy_rate || 0);
 
           const label = document.createElement("div");
           label.className = "resource-label";
+          if (row.is_currently_occupied) {
+            label.classList.add(kind === "room" ? "occupied-room" : "occupied-device");
+          }
           const details = [`예약 ${row.reservation_count}건`];
           const availableSlots = Number(row.available_slots || 0);
           const unavailableSlots = Number(row.unavailable_slots || 0);
+          if (row.is_currently_occupied) {
+            details.unshift("현재 예약중");
+          }
           if (availableSlots > 0) {
             details.push(`가능 ${availableSlots}슬롯`);
           }
@@ -310,6 +416,7 @@
             const width = Math.max(0.8, ((end - start) / total) * 100);
             const bar = document.createElement("div");
             bar.className = `bar ${kind}`;
+            bar.style.backgroundColor = occupancyToColor(kind, occupancyRate);
             bar.style.left = `${left}%`;
             bar.style.width = `${width}%`;
             const startLabel = formatDateTimeWithYear(reservation.start);
@@ -408,14 +515,19 @@
       }
 
       async function loadSchedule() {
-        const response = await fetch(`/api/schedule?period=${state.period}`);
-        const payload = await response.json();
+        const response = await fetch(apiUrl(`/api/schedule?period=${state.period}`));
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload || !payload.window_start || !payload.window_end) {
+          const message = payload && payload.message ? payload.message : "스케줄을 불러오지 못했습니다.";
+          throw new Error(message);
+        }
         state.windowStart = toDate(payload.window_start);
         state.windowEnd = toDate(payload.window_end);
         state.blockedIntervals = payload.blocked_intervals || [];
 
         const rangeInfo = document.getElementById("rangeInfo");
-        rangeInfo.textContent = `표시 기간: ${formatDateTimeWithYear(payload.window_start)} ~ ${formatDateTimeWithYear(payload.window_end)} (${payload.period})`;
+        const periodLabel = payload.period === "day" ? "day:금일 현재시각부터" : payload.period;
+        rangeInfo.textContent = `표시 기간: ${formatDateTimeWithYear(payload.window_start)} ~ ${formatDateTimeWithYear(payload.window_end)} (${periodLabel})`;
 
         drawTicks("roomTicks", state.windowStart, state.windowEnd);
         drawTicks("deviceTicks", state.windowStart, state.windowEnd);
@@ -424,7 +536,7 @@
       }
 
       async function commitReservationOption(option) {
-        const response = await fetch("/api/reserve/commit", {
+        const response = await fetch(apiUrl("/api/reserve/commit"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: state.pendingText, option }),
@@ -454,7 +566,7 @@
           return;
         }
 
-        const response = await fetch("/api/reserve/options", {
+        const response = await fetch(apiUrl("/api/reserve/options"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text }),
@@ -482,15 +594,20 @@
 
       document.getElementById("reserveForm").addEventListener("submit", submitReservation);
       document.getElementById("resultCardCopyBtn").addEventListener("click", copyResultCard);
+      state.apiBase = getApiBaseFromQuery();
       updateDynamicExample();
       updateCurrentTimeInfo();
       hideResultCard();
+      refreshPeerLink();
       setInterval(() => {
         updateDynamicExample();
         updateCurrentTimeInfo();
       }, 60 * 1000);
+      setInterval(() => {
+        refreshPeerLink();
+      }, 15 * 1000);
       updatePeriodButtons();
-      loadSchedule().catch(() => setMessage("스케줄을 불러오지 못했습니다.", true));
+      loadSchedule().catch((error) => setMessage(error?.message || "스케줄을 불러오지 못했습니다.", true));
     </script>
   </body>
 </html>

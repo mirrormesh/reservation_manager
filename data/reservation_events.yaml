@@ -2752,3 +2752,607 @@
     start: 2026-02-24T10:00
     end: 2026-02-24T11:10
     request_text: null
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 163302db-abc2-4048-841e-28e845828635
+    resource: 테스트단말기5
+    end: 2026-02-24T10:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: f66f4ba8-dddc-413d-b1b5-90439447e6cc
+    resource: 테스트단말기3
+    end: 2026-02-24T10:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: e8545c97-cf85-4a76-b085-c2b1470d0620
+    resource: 회의실1
+    end: 2026-02-24T09:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: d7278c98-5b42-405e-91fa-3618604b5333
+    resource: 테스트단말기15
+    end: 2026-02-24T09:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 25df3cea-90c6-42de-81f8-478088173563
+    resource: 테스트단말기4
+    end: 2026-02-24T09:10
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: caca70d4-75f7-432f-bed4-e3cca27d6202
+    resource: 회의실9
+    end: 2026-02-24T10:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 09dec3b6-e254-4b7a-b337-a53f0416ddfb
+    resource: 테스트단말기10
+    end: 2026-02-24T09:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 8c7ffeab-2627-4223-995d-5913a526a8b8
+    resource: 회의실2
+    end: 2026-02-24T09:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 09d2dee1-3e0a-4f76-af7e-593005e1cd42
+    resource: 테스트단말기2
+    end: 2026-02-24T09:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: b8deb5c9-0bab-498e-8523-c247fad5ea3d
+    resource: 테스트단말기14
+    end: 2026-02-24T09:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 1f59161a-5a35-4d0c-958e-bcfced8c03a9
+    resource: 테스트단말기6
+    end: 2026-02-24T10:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: e64e02d9-e3cf-4da9-b01c-2bf2363b7821
+    resource: 테스트단말기20
+    end: 2026-02-24T09:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 205fa5c6-40ab-4121-a543-db5f08fa0741
+    resource: 테스트단말기8
+    end: 2026-02-24T09:30
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: b418528a-72a7-4308-9b28-f828612151ee
+    resource: 테스트단말기9
+    end: 2026-02-24T09:30
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: d8ccc01b-a723-4cdc-bc7f-6cc2551a6572
+    resource: 회의실6
+    end: 2026-02-24T09:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 147f5e88-f8f6-423d-b612-56c193a1d4a0
+    resource: 회의실3
+    end: 2026-02-24T09:30
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: c9271c4b-d74e-42a8-835b-5bfc4bb14880
+    resource: 테스트단말기1
+    end: 2026-02-24T09:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: c3d3580d-3a5e-4d0d-a1e5-84ffbddc0321
+    resource: 회의실8
+    end: 2026-02-24T10:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: eb2a7e18-3f86-425a-90cd-6d0aba20366c
+    resource: 테스트단말기7
+    end: 2026-02-24T09:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 0513feec-42d8-49dc-ad99-28388e9baa72
+    resource: 테스트단말기13
+    end: 2026-02-24T10:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: d72718c4-265f-4a96-a829-0a944eef8707
+    resource: 회의실10
+    end: 2026-02-24T11:20
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 6f4ffd2b-52b5-447f-992f-ee497cbccc2e
+    resource: 회의실3
+    end: 2026-02-24T11:30
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 03f85f14-32e7-4d7d-9462-b1f23bb92144
+    resource: 테스트단말기4
+    end: 2026-02-24T11:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: b2839c84-31d9-4548-bf8b-67fe51db2c99
+    resource: 테스트단말기5
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 36583c14-f538-4281-b27d-deadc26b3b22
+    resource: 테스트단말기11
+    end: 2026-02-24T11:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 3224a1af-73f5-4a89-9a97-ffede7bf5a46
+    resource: 회의실2
+    end: 2026-02-24T11:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 6a1aee29-bc19-4fc7-af43-15b747d4de35
+    resource: 테스트단말기15
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 207e6906-3597-45e0-8f03-3fc047b8ed86
+    resource: 테스트단말기1
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: e4e06792-4944-4852-a54e-1165f60b446c
+    resource: 테스트단말기3
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 072c2c5d-0aab-4dbf-8789-8648a0b0fc08
+    resource: 회의실5
+    end: 2026-02-24T11:20
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: e107825f-3bcf-41ee-8f3a-e1d032654e52
+    resource: 회의실4
+    end: 2026-02-24T11:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: cc7342b3-cd9e-4396-bc2f-a63671b3ffa1
+    resource: 테스트단말기10
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 6e6e6038-b8c7-4c41-9243-dcca662b2c05
+    resource: 테스트단말기2
+    end: 2026-02-24T11:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 24d67caa-a1bc-42c1-8d60-04029940aacc
+    resource: 테스트단말기16
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: c9c33243-3ad1-41cf-b4a2-d532d6e96a62
+    resource: 테스트단말기9
+    end: 2026-02-24T11:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 5d9083e8-9f33-441c-9183-86e8b35937c7
+    resource: 테스트단말기7
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 0d05f4e8-e2a0-4815-acd6-b2abf2c615e3
+    resource: 회의실1
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: fca71a43-fcf9-4141-8269-cc07b3ea065c
+    resource: 테스트단말기14
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: d150be76-cdf3-4c78-9411-8341e988a409
+    resource: 테스트단말기20
+    end: 2026-02-24T11:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 09557abe-a20d-4a32-903d-a8fba8d9d467
+    resource: 테스트단말기19
+    end: 2026-02-24T11:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: b3a327e4-dbc6-4892-a855-b5ebca8608b2
+    resource: 테스트단말기12
+    end: 2026-02-24T11:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 7ab91523-aa36-4eb6-9637-e1db86b3326f
+    resource: 회의실7
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: ee26d80b-4342-4971-a807-84048a0af0ff
+    resource: 테스트단말기17
+    end: 2026-02-24T11:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 6f3b4a8c-746a-4f5f-a128-fa9f8ce423e8
+    resource: 테스트단말기8
+    end: 2026-02-24T12:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 0d8c2f87-bf29-4faa-91b0-b31ba25cb883
+    resource: 회의실3
+    end: 2026-02-24T15:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: ea6ccc64-b36b-4d18-9e87-5e3eb9bc6137
+    resource: 테스트단말기17
+    end: 2026-02-24T14:20
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: b7df413e-4d90-4000-b353-8a5880b3a4ff
+    resource: 테스트단말기5
+    end: 2026-02-24T14:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 1c26953f-b15a-4010-8a43-46a186b91c7f
+    resource: 테스트단말기2
+    end: 2026-02-24T15:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: ed3ee4fb-6f8e-4eeb-8456-592404dd2579
+    resource: 테스트단말기15
+    end: 2026-02-24T14:20
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: aed25f06-c538-42a7-95f0-1a95318fa0ca
+    resource: 테스트단말기4
+    end: 2026-02-24T14:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: c757f405-c6a1-47a4-ae65-614f753cbce3
+    resource: 테스트단말기18
+    end: 2026-02-24T14:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 4321562d-a881-47b3-95ce-84fabd6ab1f4
+    resource: 회의실2
+    end: 2026-02-24T14:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 7f26420d-79ce-41b6-af71-eb128bb20374
+    resource: 테스트단말기8
+    end: 2026-02-24T14:30
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 32af7628-9216-4809-a943-4824a402c08e
+    resource: 회의실9
+    end: 2026-02-24T14:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 042e2107-3cc2-4d30-bc69-4a791e841004
+    resource: 테스트단말기19
+    end: 2026-02-24T15:00
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 3b70f3e3-77d0-49c6-9b58-75d65c9d1ee4
+    resource: 회의실8
+    end: 2026-02-24T14:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: f005a2b8-d0ed-4e37-b5d6-3446ac4cd6d8
+    resource: 회의실1
+    end: 2026-02-24T14:50
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 622cb611-0d30-47cb-9b11-c02aa6d50061
+    resource: 테스트단말기20
+    end: 2026-02-24T14:30
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: b2c52ee3-0fb0-4540-984a-24f0f573f935
+    resource: 테스트단말기16
+    end: 2026-02-24T14:30
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: faba17b5-4b50-4b79-af81-13c1b0818972
+    resource: 테스트단말기3
+    end: 2026-02-24T14:40
+- event_time: '2026-02-24T16:14:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 059c01ec-fe4c-4d81-9b60-048fab448fe6
+    resource: 회의실1
+    end: 2026-02-24T11:10
+- event_time: '2026-02-24T16:38:32'
+  event_type: TEST_DATA_GENERATED_LARGE
+  payload:
+    count: 1252
+    days: 30
+    slots_per_day: 4
+    resources: 30
+    weekday_only: true
+    business_hours: 08:00-19:00
+    overwrite: true
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 1d314589-7d58-46b5-8eab-74f1f0d24529
+    resource: 테스트단말기14
+    end: 2026-02-24T16:20
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 326e4baf-6c6a-4f85-afcf-396a76e3db77
+    resource: 회의실2
+    end: 2026-02-24T16:30
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: f65dd798-fe0b-4b21-998e-6b080bb0a793
+    resource: 테스트단말기9
+    end: 2026-02-24T13:10
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: d2b036c6-ac68-4663-979c-02a50cd6a10a
+    resource: 테스트단말기11
+    end: 2026-02-24T16:30
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 74cd400d-e934-4d5f-bd57-ab447afb43b7
+    resource: 테스트단말기15
+    end: 2026-02-24T16:00
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 32f62a65-a203-45b0-96ad-2eaed6a5f781
+    resource: 테스트단말기19
+    end: 2026-02-24T11:40
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: caa2e0c1-25a8-4215-88ba-a3d54dc83106
+    resource: 테스트단말기6
+    end: 2026-02-24T10:50
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 59a147d2-ec31-41f9-99aa-cdf272079441
+    resource: 회의실1
+    end: 2026-02-24T16:00
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: ed3ebc11-6c57-4c2f-b626-a41498eb39eb
+    resource: 회의실3
+    end: 2026-02-24T16:30
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 5c931db9-0542-428a-9e8d-a2afbed64a6e
+    resource: 테스트단말기2
+    end: 2026-02-24T16:00
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: f9c4f67b-5f0a-4414-b644-a6c79bae4ff5
+    resource: 회의실7
+    end: 2026-02-24T10:30
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: c7a6e13f-fa1f-4760-b251-fd2b535c5b43
+    resource: 테스트단말기5
+    end: 2026-02-24T15:20
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 3e03e9e9-1697-4369-92ae-76e02d3bc609
+    resource: 테스트단말기11
+    end: 2026-02-24T15:10
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 2a5072d9-aa4a-4320-994e-f11b213e7400
+    resource: 테스트단말기4
+    end: 2026-02-24T13:40
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 0f336cab-c959-4a05-95eb-83bbf8b07e9f
+    resource: 테스트단말기1
+    end: 2026-02-24T08:50
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 16892ce9-ed89-4d91-8379-91a787b71746
+    resource: 테스트단말기1
+    end: 2026-02-24T11:40
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: e2e62c7f-7e29-4852-9c89-bb2aa4691bc9
+    resource: 테스트단말기7
+    end: 2026-02-24T16:30
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 5d4e21dc-0ac0-4e73-9c30-c2a8ef891011
+    resource: 테스트단말기4
+    end: 2026-02-24T08:40
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: b2434d79-da25-4c59-bedb-d2ba5c838b23
+    resource: 테스트단말기16
+    end: 2026-02-24T13:00
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: c34dac22-e668-4ce9-8394-4310073ef2d6
+    resource: 테스트단말기4
+    end: 2026-02-24T16:20
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: c6b331e2-dc0a-4aa9-b983-3fb64cc15c67
+    resource: 회의실8
+    end: 2026-02-24T12:10
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 056ced50-8387-4e94-9c12-108184b410a8
+    resource: 테스트단말기9
+    end: 2026-02-24T11:10
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 974f5e1e-c7a0-4d46-b631-3dc6a1dfed6f
+    resource: 테스트단말기1
+    end: 2026-02-24T12:30
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 9f3463c1-2936-4169-bd74-187b6a0199e8
+    resource: 테스트단말기13
+    end: 2026-02-24T12:20
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 0cdf9ad9-ca51-4697-8f83-641cbacee408
+    resource: 테스트단말기3
+    end: 2026-02-24T13:30
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 33d38b0b-1e94-4545-b5eb-9074015a9c9e
+    resource: 테스트단말기16
+    end: 2026-02-24T09:40
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: c4214bbd-9402-49a4-8609-b2c4f4381c42
+    resource: 회의실9
+    end: 2026-02-24T14:30
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 749b78c6-b7c8-4b78-9926-40dc82bb1e7e
+    resource: 회의실1
+    end: 2026-02-24T12:40
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 4ddfd6fc-c4a2-4334-9d86-c152ac79f634
+    resource: 테스트단말기15
+    end: 2026-02-24T14:40
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 2a7e54e3-9c4d-4468-a43e-1bba3191bab3
+    resource: 테스트단말기20
+    end: 2026-02-24T13:00
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: bca60553-6cc7-40c7-8376-64b4e5b1f383
+    resource: 테스트단말기1
+    end: 2026-02-24T16:30
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 90d5c0d1-603e-4501-9ef0-de178aff7c45
+    resource: 테스트단말기12
+    end: 2026-02-24T15:40
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: fda226ff-d7b4-4e30-810e-d0265cdc45a8
+    resource: 테스트단말기10
+    end: 2026-02-24T13:10
+- event_time: '2026-02-24T16:38:50'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: e120de14-c968-426a-9515-0109b6c484ee
+    resource: 회의실4
+    end: 2026-02-24T15:40
+- event_time: '2026-02-24T16:40:48'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: c386b92f-887c-4fe8-a257-65591fe8a693
+    resource: 회의실6
+    end: 2026-02-24T16:40
+- event_time: '2026-02-24T16:54:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 9e91b361-176e-4ad2-af30-a1306dc123a0
+    resource: 회의실9
+    end: 2026-02-24T16:50
+- event_time: '2026-02-24T16:54:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: b52e6beb-e892-40de-88a9-4f94811a7f19
+    resource: 테스트단말기1
+    end: 2026-02-24T16:50
+- event_time: '2026-02-24T16:54:17'
+  event_type: RESERVATION_CLOSED
+  payload:
+    reservation_id: 9a726c54-45ff-4d19-809d-f9637c1dd78a
+    resource: 테스트단말기16
+    end: 2026-02-24T16:50

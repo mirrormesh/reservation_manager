@@ -24,6 +24,16 @@ class TestNaturalLanguageParsing(unittest.TestCase):
         with self.assertRaises(ValueError):
             parse_reservation_request("회의실A 10:00~11:00 예약")
 
+    def test_parse_relative_korean_time_expression(self) -> None:
+        parsed = parse_reservation_request(
+            "회의실1 오늘 오후 5시 1시간 예약",
+            reference_datetime=datetime(2026, 2, 24, 9, 0),
+        )
+
+        self.assertEqual(parsed.resource, "회의실1")
+        self.assertEqual(parsed.start, datetime(2026, 2, 24, 17, 0))
+        self.assertEqual(parsed.end, datetime(2026, 2, 24, 18, 0))
+
 
 class TestNaturalLanguageReservation(unittest.TestCase):
     def test_can_reserve_from_text_true_when_boundary_touching(self) -> None:

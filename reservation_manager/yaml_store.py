@@ -354,6 +354,7 @@ class ReservationYamlRepository:
             start_date=effective_now.date(),
             days=days,
             slots_per_day=slots_per_day,
+            reference_now=effective_now,
         )
 
         if overwrite:
@@ -460,7 +461,12 @@ def generate_test_reservations(start_date: date) -> list[ReservationRecord]:
     return records
 
 
-def generate_large_test_reservations(start_date: date, days: int = 30, slots_per_day: int = 4) -> list[ReservationRecord]:
+def generate_large_test_reservations(
+    start_date: date,
+    days: int = 30,
+    slots_per_day: int = 4,
+    reference_now: datetime | None = None,
+) -> list[ReservationRecord]:
     if days <= 0:
         raise ValueError("days must be greater than zero")
     if slots_per_day <= 0:
@@ -471,14 +477,7 @@ def generate_large_test_reservations(start_date: date, days: int = 30, slots_per
     if not business_days:
         raise ValueError("No weekdays available in the given window.")
 
-    hour_patterns = [
-        [8, 10, 13, 15, 17],
-        [8, 9, 11, 14, 16],
-        [9, 10, 12, 15, 17],
-        [8, 11, 13, 16, 17],
-        [9, 11, 14, 16, 17],
-    ]
-    if slots_per_day > len(hour_patterns[0]):
+    if slots_per_day > 5:
         raise ValueError("slots_per_day is too large for business-hour constraints")
 
     rng = random.Random(f"large:{start_date.isoformat()}:{days}:{slots_per_day}")
@@ -486,39 +485,76 @@ def generate_large_test_reservations(start_date: date, days: int = 30, slots_per
 
     records: list[ReservationRecord] = []
     now = datetime.now()
+    effective_now = reference_now or datetime.now()
+    preferred_minutes = (effective_now.hour * 60) + (effective_now.minute // 10) * 10
+
     total_business_days = len(business_days)
     for day_index, day in enumerate(business_days):
-        pattern = rng.choice(hour_patterns)
-        selected_hours = sorted(pattern[:slots_per_day])
         day_density = _near_term_density_ratio(day_index, total_business_days)
+        slot_factor = max(0.75, slots_per_day / 4)
 
-        for start_hour in selected_hours:
-            slot_start = datetime(day.year, day.month, day.day, start_hour, 0)
-            slot_end = slot_start + timedelta(hours=1)
+        daily_min = max(20, int(36 * day_density * slot_factor))
+        daily_max = max(daily_min + 8, int(70 * day_density * slot_factor))
+        daily_target = rng.randint(daily_min, daily_max)
 
-            target_min = max(4, int(12 * day_density))
-            target_max = max(target_min + 1, int(20 * day_density))
-            target_max = min(target_max, len(resources))
-            target_min = min(target_min, target_max)
-            target_count = rng.randint(target_min, target_max)
-            picked_resources = _weighted_sample_without_replacement(rng, weighted_resources, target_count)
-            for resource in picked_resources:
-                start_minute = rng.choice([0, 10, 20, 30, 40, 50])
-                start = datetime(day.year, day.month, day.day, start_hour, start_minute)
-                max_duration = int((slot_end - start).total_seconds() // 60)
-                duration_candidates = [value for value in [10, 20, 30, 40, 50, 60] if value <= max_duration]
-                duration_minutes = rng.choice(duration_candidates)
-                end = start + timedelta(minutes=duration_minutes)
-                records.append(
-                    ReservationRecord(
-                        reservation_id=str(uuid4()),
-                        resource=resource,
-                        start=start,
-                        end=end,
-                        created_at=now,
-                        updated_at=now,
-                    )
+        candidate_starts: list[datetime] = []
+        candidate_weights: list[float] = []
+        for hour in range(BUSINESS_START_HOUR, BUSINESS_END_HOUR):
+            for minute in [0, 10, 20, 30, 40, 50]:
+                start = datetime(day.year, day.month, day.day, hour, minute)
+                if start >= datetime(day.year, day.month, day.day, BUSINESS_END_HOUR, 0):
+                    continue
+
+                minute_of_day = (hour * 60) + minute
+                distance = abs(minute_of_day - preferred_minutes)
+                time_weight = 1.2 / (1 + (distance / 120))
+                if day == effective_now.date() and minute_of_day >= preferred_minutes:
+                    time_weight *= 1.4
+                candidate_starts.append(start)
+                candidate_weights.append(time_weight)
+
+        resource_usage: dict[str, list[tuple[datetime, datetime]]] = {resource: [] for resource in resources}
+        start_usage: dict[str, int] = {}
+
+        attempts = 0
+        max_attempts = daily_target * 8
+        while len([item for bucket in resource_usage.values() for item in bucket]) < daily_target and attempts < max_attempts:
+            attempts += 1
+
+            resource = _weighted_choice(rng, weighted_resources)
+
+            adjusted_weights: list[float] = []
+            for start, weight in zip(candidate_starts, candidate_weights):
+                start_key = start.isoformat(timespec="minutes")
+                repeated_penalty = 1 + (start_usage.get(start_key, 0) * 0.65)
+                adjusted_weights.append(weight / repeated_penalty)
+
+            start = _weighted_choice(rng, list(zip(candidate_starts, adjusted_weights)))
+            max_duration = int((datetime(day.year, day.month, day.day, BUSINESS_END_HOUR, 0) - start).total_seconds() // 60)
+            duration_candidates = [value for value in [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120] if value <= max_duration]
+            if not duration_candidates:
+                continue
+            duration_minutes = rng.choice(duration_candidates)
+            end = start + timedelta(minutes=duration_minutes)
+
+            overlaps = any(start < existing_end and end > existing_start for existing_start, existing_end in resource_usage[resource])
+            if overlaps:
+                continue
+
+            resource_usage[resource].append((start, end))
+            start_key = start.isoformat(timespec="minutes")
+            start_usage[start_key] = start_usage.get(start_key, 0) + 1
+
+            records.append(
+                ReservationRecord(
+                    reservation_id=str(uuid4()),
+                    resource=resource,
+                    start=start,
+                    end=end,
+                    created_at=now,
+                    updated_at=now,
                 )
+            )
 
     return records
 
@@ -857,6 +893,23 @@ def _weighted_sample_without_replacement(
     return selected
 
 
+def _weighted_choice[T](rng: random.Random, weighted_items: list[tuple[T, float]]) -> T:
+    if not weighted_items:
+        raise ValueError("weighted_items must not be empty")
+
+    total_weight = sum(max(0.0, float(weight)) for _, weight in weighted_items)
+    if total_weight <= 0:
+        return weighted_items[rng.randrange(len(weighted_items))][0]
+
+    pick = rng.uniform(0, total_weight)
+    cumulative = 0.0
+    for item, weight in weighted_items:
+        cumulative += max(0.0, float(weight))
+        if pick <= cumulative:
+            return item
+    return weighted_items[-1][0]
+
+
 def _pick_weighted_business_day(rng: random.Random, business_days: list[date]) -> date:
     if len(business_days) == 1:
         return business_days[0]
@@ -877,8 +930,8 @@ def _near_term_density_ratio(index: int, total_count: int) -> float:
         return 1.0
 
     progress = index / (total_count - 1)
-    base = 1.35 - (0.95 * progress)
-    return max(0.4, base)
+    base = 1.45 - (0.65 * progress)
+    return max(0.75, base)
 
 
 def _validate_bookable_request(start: datetime, end: datetime, now: datetime) -> None:

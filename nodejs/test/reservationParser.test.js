@@ -67,3 +67,13 @@ test('normalizeReservationRange: floors start and ceils end to 10-minute increme
   assert.equal(normalized.start.toISOString(), new Date('2026-02-24T10:00:00').toISOString());
   assert.equal(normalized.end.toISOString(), new Date('2026-02-24T11:10:00').toISOString());
 });
+
+test('parseReservationRequest: parses relative Korean time expression', () => {
+  const parsed = parseReservationRequest('회의실1 오늘 오후 5시 1시간 예약', {
+    referenceDate: new Date('2026-02-24T09:00:00'),
+  });
+
+  assert.equal(parsed.resource, '회의실1');
+  assert.equal(parsed.start.toISOString(), new Date('2026-02-24T17:00:00').toISOString());
+  assert.equal(parsed.end.toISOString(), new Date('2026-02-24T18:00:00').toISOString());
+});
