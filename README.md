@@ -72,7 +72,7 @@ YAML 기반 자원 예약 시스템입니다. 회의실(10개)과 테스트단�
 ### 1) Windows 원클릭 검증
 
 ```bat
-run_windows_check.bat
+run_windows_first_run.bat check
 ```
 
 자동 수행:
@@ -89,36 +89,24 @@ run_windows_check.bat
 Python UI 실행:
 
 ```bat
-run_windows_python.bat
+run_windows_python.bat [setup|test|server|all]
 ```
 
-- `.venv` 준비 후 Python 의존성(`PyYAML`, `Flask`) 설치
-- Python UI 서버 실행 + 브라우저 오픈
-- 주소: `http://127.0.0.1:5000`
+- 기본값 `all`: Python 3 자동 감지/설치 → `.venv` 구성 → `pip install` → 샘플 데이터 보정 → `python -m unittest discover -s tests -v` 실행 후 Flask UI 서버 및 브라우저 자동 오픈
+- `setup`: 환경 준비/샘플 데이터 생성까지만 수행(테스트/서버 생략)
+- `test`: 준비된 환경에서 Python 단위 테스트만 실행
+- `server`: 기존 준비 상태를 신뢰하고 UI 서버만 즉시 실행 (주소 `http://127.0.0.1:5000`)
 
 Node.js UI 실행:
 
 ```bat
-run_windows_node.bat server
+run_windows_node.bat [setup|test|server|all]
 ```
 
-- Node 테스트 웹페이지 + API 서버 실행
-- 주소: `http://127.0.0.1:3000`
-- 확인용 엔드포인트: `GET /`, `GET /health`, `GET|POST /parse`
-
-Node.js 추가 모드:
-
-```bat
-run_windows_node.bat
-```
-
-- 기본 모드: Node 테스트만 실행 (`nodejs/test/*.test.js`)
-
-```bat
-run_windows_node.bat all
-```
-
-- 테스트 실행 후 서버를 연속 실행
+- 기본값 `all`: 휴대용 Node.js(v20.12.2) 자동 설치 → Python 백엔드 준비(`run_windows_python setup`) → Python·Node 테스트 순차 실행 → Node API 서버 및 브라우저 오픈 (주소 `http://127.0.0.1:3000`)
+- `setup`: Node 런타임 + Python 환경만 구성
+- `test`: Python 단위 테스트 후 Node 테스트(`node --test nodejs/test/*.test.js`)까지 수행
+- `server`: 준비된 런타임을 사용해 Node API/테스트 페이지만 기동 (엔드포인트 `GET /`, `GET /health`, `GET|POST /parse`, `/api/*`)
 
 교차 조합 테스트(프론트/백 분리):
 
@@ -143,6 +131,17 @@ run_windows_first_run.bat
 2. Python/Node 테스트 실행
 3. 초기 샘플 데이터 생성
 4. UI 서버 실행 및 브라우저 오픈
+
+> 참고: `run_windows_first_run.bat`는 기본값 `first-run` 모드와 `check` 모드를 모두 지원합니다. 구버전 호환을 위해 남겨둔 `run_windows_check.bat`는 내부적으로 `run_windows_first_run.bat check`를 호출합니다.
+
+### 3-1) 통합 스크립트 모드 요약
+
+| 모드 | 실행 명령 | 주요 목적 |
+| --- | --- | --- |
+| `first-run` (기본) | `run_windows_first_run.bat` | 초기 환경 구성 + 샘플 데이터 생성 + UI 서버 실행 |
+| `check` | `run_windows_first_run.bat check` | 기존 원클릭 검증 플로우(테스트/퀵체크) |
+
+> `run_windows_check.bat`를 직접 실행해도 기존 습관대로 사용 가능하지만, 내부적으로 위 표의 `check` 모드를 호출합니다.
 
 ### 4) 수동 테스트 실행
 

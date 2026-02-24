@@ -65,6 +65,9 @@
 
       .option-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 0 auto 14px; max-width: 980px; }
       .option-title { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+        .option-existing { font-size: 12px; color: var(--muted); margin: -4px 0 8px; }
+        .option-existing ul { margin: 4px 0 0 14px; padding: 0; }
+        .option-existing li { list-style: disc; margin: 0 0 2px; }
       .option-list { display: flex; flex-wrap: wrap; gap: 8px; }
       .option-btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 8px 10px; cursor: pointer; color: var(--text); }
       .option-btn:hover { border-color: var(--primary); }
@@ -72,6 +75,23 @@
       .sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
       .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
       .panel h2 { margin: 0 0 12px; font-size: 17px; }
+
+      .my-reservations-panel { margin: 0 auto 14px; max-width: 980px; }
+      .my-reservations-panel h2 { font-size: 16px; }
+      .my-reservation-help { font-size: 12px; color: var(--muted); margin: -4px 0 10px; }
+      .my-reservation-list { display: flex; flex-direction: column; gap: 10px; }
+      .my-reservation-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: linear-gradient(135deg, rgba(47, 107, 255, 0.04), rgba(17, 163, 106, 0.05)); display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
+      .my-reservation-body { flex: 1; min-width: 230px; }
+      .my-reservation-body strong { display: block; font-size: 15px; margin-bottom: 4px; }
+      .my-reservation-body span { display: block; font-size: 13px; color: var(--text); }
+      .my-reservation-body small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+      .my-reservation-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .my-reservation-actions input { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px; min-width: 220px; }
+      .my-reservation-actions button { border: none; border-radius: 9999px; padding: 7px 14px; font-size: 12px; cursor: pointer; font-weight: 600; }
+      .my-reservation-actions button.update { background: var(--primary); color: #fff; }
+      .my-reservation-actions button.delete { background: rgba(198, 40, 40, 0.12); color: #b71c1c; }
+      .my-reservation-empty { font-size: 13px; color: var(--muted); padding: 4px 0; }
+      .my-reservation-error { color: #b71c1c; font-size: 13px; }
 
       .timeline-header { display: grid; grid-template-columns: 220px 1fr; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
       .ticks { position: relative; height: 16px; }
@@ -91,6 +111,7 @@
       .bar { position: absolute; top: 5px; height: 18px; border-radius: 4px; font-size: 10px; color: #fff; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 2px solid rgba(255, 255, 255, 0.95); border-right: 2px solid rgba(255, 255, 255, 0.95); z-index: 3; }
       .bar.room { background: var(--room); }
       .bar.device { background: var(--device); }
+      .bar.mine { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 0 3px rgba(47, 107, 255, 0.35); }
 
       @media (max-width: 1250px) { .sections { grid-template-columns: 1fr; } }
     </style>
@@ -125,9 +146,18 @@
       </div>
 
       <div id="optionPanel" class="option-panel" style="display:none;">
-        <div class="option-title">회피 예약 가능한 방법을 선택하세요 (최대 3개)</div>
+        <div id="optionContextInfo" class="option-title">회피 예약 가능한 방법을 선택하세요 (최대 3개)</div>
+        <div id="optionExistingList" class="option-existing"></div>
         <div id="optionList" class="option-list"></div>
       </div>
+
+      <section id="myReservationPanel" class="panel my-reservations-panel">
+        <h2>내 예약 관리</h2>
+        <p class="my-reservation-help">직접 입력한 예약은 이곳에서 빠르게 시간 변경 또는 삭제할 수 있습니다.</p>
+        <div id="myReservationList" class="my-reservation-list">
+          <p class="my-reservation-empty">직접 예약한 내역이 없습니다.</p>
+        </div>
+      </section>
 
       <div id="currentTimeInfo" class="table-now"></div>
 
@@ -155,6 +185,8 @@
         period: "day",
         latestResultText: "",
         apiBase: "",
+        myReservations: [],
+        optionContext: "avoidance",
       };
 
       function normalizeApiBase(rawValue) {
@@ -419,6 +451,9 @@
             bar.style.backgroundColor = occupancyToColor(kind, occupancyRate);
             bar.style.left = `${left}%`;
             bar.style.width = `${width}%`;
+            if (reservation.is_mine) {
+              bar.classList.add("mine");
+            }
             const startLabel = formatDateTimeWithYear(reservation.start);
             const endLabel = formatDateTimeWithYear(reservation.end);
             const tooltipRange = formatTooltipRange(reservation.start, reservation.end);
@@ -438,6 +473,146 @@
         });
       }
 
+      function renderMyReservations(errorText = "") {
+        const list = document.getElementById("myReservationList");
+        list.innerHTML = "";
+
+        if (errorText) {
+          const errorNode = document.createElement("p");
+          errorNode.className = "my-reservation-error";
+          errorNode.textContent = errorText;
+          list.appendChild(errorNode);
+          return;
+        }
+
+        if (!state.myReservations.length) {
+          const empty = document.createElement("p");
+          empty.className = "my-reservation-empty";
+          empty.textContent = "직접 예약한 내역이 없습니다.";
+          list.appendChild(empty);
+          return;
+        }
+
+        state.myReservations.forEach((reservation) => {
+          const card = document.createElement("div");
+          card.className = "my-reservation-card";
+
+          const body = document.createElement("div");
+          body.className = "my-reservation-body";
+          const requestText = (reservation.request_text || "").trim();
+          body.innerHTML = `
+            <strong>${reservation.resource}</strong>
+            <span>${formatDateTimeWithYear(reservation.start)} ~ ${formatDateTimeWithYear(reservation.end)}</span>
+            <small>${requestText ? requestText : "자연어 입력"}</small>
+          `;
+
+          const actions = document.createElement("div");
+          actions.className = "my-reservation-actions";
+          const input = document.createElement("input");
+          input.type = "text";
+          input.placeholder = "새로운 예약 문장을 입력하세요.";
+          input.value = requestText;
+          input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              updateMyReservation(reservation.reservation_id, input.value);
+            }
+          });
+
+          const updateButton = document.createElement("button");
+          updateButton.type = "button";
+          updateButton.className = "update";
+          updateButton.textContent = "시간 변경";
+          updateButton.addEventListener("click", () => updateMyReservation(reservation.reservation_id, input.value));
+
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "delete";
+          deleteButton.textContent = "삭제";
+          deleteButton.addEventListener("click", () => deleteMyReservation(reservation.reservation_id));
+
+          actions.appendChild(input);
+          actions.appendChild(updateButton);
+          actions.appendChild(deleteButton);
+
+          card.appendChild(body);
+          card.appendChild(actions);
+          list.appendChild(card);
+        });
+      }
+
+      async function loadMyReservations() {
+        try {
+          const response = await fetch(apiUrl("/api/my-reservations"));
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || !payload.ok) {
+            throw new Error(payload.message || "내 예약을 불러오지 못했습니다.");
+          }
+          state.myReservations = payload.reservations || [];
+          renderMyReservations();
+        } catch (error) {
+          renderMyReservations(error?.message || "내 예약을 불러오지 못했습니다.");
+          throw error;
+        }
+      }
+
+      async function deleteMyReservation(reservationId) {
+        if (!reservationId) {
+          setMessage("삭제할 예약을 찾지 못했습니다.", true);
+          return;
+        }
+        const confirmed = window.confirm("선택한 예약을 삭제하시겠습니까?");
+        if (!confirmed) {
+          return;
+        }
+
+        const response = await fetch(apiUrl("/api/my-reservations/delete"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reservation_id: reservationId }),
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok || !payload.ok) {
+          setMessage(payload.message || "예약 삭제에 실패했습니다.", true);
+          return;
+        }
+
+        setMessage("예약을 삭제했습니다.");
+        try {
+          await Promise.all([loadSchedule(), loadMyReservations()]);
+        } catch (error) {
+          setMessage(error?.message || "데이터를 새로고침하지 못했습니다.", true);
+        }
+      }
+
+      async function updateMyReservation(reservationId, text) {
+        const cleanText = String(text || "").trim();
+        if (!reservationId || !cleanText) {
+          setMessage("변경할 예약 문장을 입력해주세요.", true);
+          return;
+        }
+
+        const response = await fetch(apiUrl("/api/my-reservations/update"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reservation_id: reservationId, text: cleanText }),
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok || !payload.ok) {
+          setMessage(payload.message || "예약 변경에 실패했습니다.", true);
+          return;
+        }
+
+        setMessage("예약 시간을 변경했습니다.");
+        try {
+          await Promise.all([loadSchedule(), loadMyReservations()]);
+        } catch (error) {
+          setMessage(error?.message || "데이터를 새로고침하지 못했습니다.", true);
+        }
+      }
+
       function setMessage(text, isError = false) {
         const node = document.getElementById("message");
         node.textContent = text;
@@ -453,7 +628,18 @@
         const card = document.getElementById("resultCard");
         const resourceText = `자원: ${reservation.resource}`;
         const timeText = `시간: ${formatDateTimeWithYear(reservation.start)} ~ ${formatDateTimeWithYear(reservation.end)}`;
-        const strategyText = `처리 방식: ${strategy}`;
+        const changeSource = (reservation.change_source || strategy || "").toString();
+        const labelMap = {
+          merged: "기존 예약 병합",
+          merge_existing: "기존 예약 병합",
+          replaced: "기존 예약 대체",
+          replace_existing: "기존 예약 대체",
+          keep_existing: "기존 예약 유지",
+          kept: "기존 예약 유지",
+          requested: "요청 시간 그대로",
+        };
+        const strategyLabel = labelMap[changeSource] || labelMap[strategy] || strategy || "예약 처리";
+        const strategyText = `처리 방식: ${strategyLabel}`;
         document.getElementById("resultCardResource").textContent = resourceText;
         document.getElementById("resultCardTime").textContent = timeText;
         document.getElementById("resultCardStrategy").textContent = strategyText;
@@ -492,12 +678,37 @@
         panel.style.display = "none";
       }
 
-      function renderOptions(options, inputText) {
+      function renderExistingReservationSummary(node, reservations) {
+        if (!reservations || !reservations.length) {
+          node.innerHTML = "";
+          return;
+        }
+        const items = reservations
+          .map((item) => {
+            const start = formatDateTimeWithYear(item.start);
+            const end = formatDateTimeWithYear(item.end);
+            return `<li>${item.resource} | ${start}~${end}</li>`;
+          })
+          .join("");
+        node.innerHTML = `<strong>겹치는 예약 목록</strong><ul>${items}</ul>`;
+      }
+
+      function renderOptions(options, inputText, metadata = {}) {
         state.pendingText = inputText;
         state.pendingOptions = options;
+        state.optionContext = metadata.type || "avoidance";
 
         const panel = document.getElementById("optionPanel");
         const list = document.getElementById("optionList");
+        const titleNode = document.getElementById("optionContextInfo");
+        const existingNode = document.getElementById("optionExistingList");
+        if (state.optionContext === "self_overlap") {
+            titleNode.textContent = "겹치는 내 예약 처리 방법을 선택하세요.";
+            renderExistingReservationSummary(existingNode, metadata.existingReservations || []);
+        } else {
+            titleNode.textContent = "회피 예약 가능한 방법을 선택하세요 (최대 3개)";
+            existingNode.innerHTML = "";
+        }
         list.innerHTML = "";
 
         options.forEach((option, index) => {
@@ -506,7 +717,8 @@
           button.className = "option-btn";
           const startText = formatDateTimeWithYear(option.start);
           const endText = formatDateTimeWithYear(option.end);
-          button.textContent = `${index + 1}) ${option.label} | ${option.resource} | ${startText}~${endText}`;
+          const label = option.label || option.strategy;
+          button.textContent = `${index + 1}) ${label} | ${option.resource} | ${startText}~${endText}`;
           button.addEventListener("click", () => commitReservationOption(option));
           list.appendChild(button);
         });
@@ -549,12 +761,26 @@
           return;
         }
 
-        const reserved = `${payload.reservation.resource} ${formatDateTimeWithYear(payload.reservation.start)}~${formatDateTimeWithYear(payload.reservation.end)}`;
-        setMessage(`예약 완료 (${payload.strategy}) - ${reserved}`);
+        const strategyMessages = {
+          merge_existing: "기존 예약과 겹쳐 하나로 합쳤습니다",
+          replace_existing: "기존 예약을 삭제하고 새로 예약했습니다",
+          keep_existing: "기존 예약을 유지했습니다",
+        };
+        const reserved = payload.reservation
+          ? `${payload.reservation.resource} ${formatDateTimeWithYear(payload.reservation.start)}~${formatDateTimeWithYear(payload.reservation.end)}`
+          : "";
+        const mergedMessage =
+          strategyMessages[payload.strategy] ||
+          (payload.merged_existing ? "기존 예약과 겹쳐 하나로 합쳤습니다" : `예약 완료 (${payload.strategy})`);
+        setMessage(reserved ? `${mergedMessage} - ${reserved}` : mergedMessage);
         renderResultCard(payload.strategy, payload.reservation);
         hideOptions();
         document.getElementById("reserveInput").value = "";
-        await loadSchedule();
+        try {
+          await Promise.all([loadSchedule(), loadMyReservations()]);
+        } catch (error) {
+          setMessage(error?.message || "데이터를 새로고침하지 못했습니다.", true);
+        }
       }
 
       async function submitReservation(event) {
@@ -577,6 +803,30 @@
           hideOptions();
           hideResultCard();
           setMessage(payload.message || "예약 처리 실패", true);
+          return;
+        }
+
+        if (payload.self_overlap) {
+          renderOptions(payload.options || [], text, {
+            type: "self_overlap",
+            existingReservations: payload.existing || [],
+          });
+          setMessage("겹치는 내 예약 처리 방법을 선택하세요.");
+          return;
+        }
+
+        if (payload.auto_reserved && payload.reservation) {
+          const reserved = `${payload.reservation.resource} ${formatDateTimeWithYear(payload.reservation.start)}~${formatDateTimeWithYear(payload.reservation.end)}`;
+          const mergedMessage = payload.merged_existing ? "기존 예약과 겹쳐 하나로 합쳤습니다" : "요청 시간 그대로 예약 완료";
+          setMessage(`${mergedMessage} - ${reserved}`);
+          renderResultCard(payload.strategy || "requested", payload.reservation);
+          hideOptions();
+          input.value = "";
+          try {
+            await Promise.all([loadSchedule(), loadMyReservations()]);
+          } catch (error) {
+            setMessage(error?.message || "데이터를 새로고침하지 못했습니다.", true);
+          }
           return;
         }
 
@@ -607,7 +857,13 @@
         refreshPeerLink();
       }, 15 * 1000);
       updatePeriodButtons();
-      loadSchedule().catch((error) => setMessage(error?.message || "스케줄을 불러오지 못했습니다.", true));
+      (async () => {
+        try {
+          await Promise.all([loadSchedule(), loadMyReservations()]);
+        } catch (error) {
+          setMessage(error?.message || "초기 데이터를 불러오지 못했습니다.", true);
+        }
+      })();
     </script>
   </body>
 </html>

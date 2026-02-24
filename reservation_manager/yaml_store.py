@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -14,6 +14,15 @@ import yaml
 from .booking import Reservation, can_reserve
 
 
+BUSINESS_START_HOUR = 8
+BUSINESS_END_HOUR = 19
+RESERVATION_WINDOW_DAYS = 30
+OWNER_SELF = "self"
+OWNER_EXTERNAL = "external"
+_VALID_OWNERS = {OWNER_SELF, OWNER_EXTERNAL}
+_KR_HOLIDAY_CACHE: dict[int, set[date]] = {}
+
+
 @dataclass(frozen=True)
 class ReservationRecord:
     reservation_id: str
@@ -22,7 +31,9 @@ class ReservationRecord:
     end: datetime
     created_at: datetime
     updated_at: datetime
+    owner: str = OWNER_EXTERNAL
     request_text: str | None = None
+    change_source: str = field(default="loaded", compare=False)
 
     def to_dict(self) -> dict[str, str]:
         payload = {
@@ -32,6 +43,7 @@ class ReservationRecord:
             "end": self.end.isoformat(timespec="minutes"),
             "created_at": self.created_at.isoformat(timespec="seconds"),
             "updated_at": self.updated_at.isoformat(timespec="seconds"),
+            "owner": self.owner if self.owner in _VALID_OWNERS else OWNER_EXTERNAL,
         }
         if self.request_text is not None:
             payload["request_text"] = self.request_text
@@ -46,7 +58,9 @@ class ReservationRecord:
             end=datetime.fromisoformat(str(data["end"])),
             created_at=datetime.fromisoformat(str(data["created_at"])),
             updated_at=datetime.fromisoformat(str(data["updated_at"])),
+            owner=_normalize_owner(data.get("owner")),
             request_text=(str(data.get("request_text")) if data.get("request_text") is not None else None),
+            change_source="loaded",
         )
 
 
@@ -74,12 +88,6 @@ class ReservationOption:
 
 class ReservationStorageError(RuntimeError):
     pass
-
-
-BUSINESS_START_HOUR = 8
-BUSINESS_END_HOUR = 19
-RESERVATION_WINDOW_DAYS = 30
-_KR_HOLIDAY_CACHE: dict[int, set[date]] = {}
 
 
 class ReservationYamlRepository:
@@ -168,6 +176,13 @@ class ReservationYamlRepository:
         rows = self._read_yaml_list(self.active_file)
         return [ReservationRecord.from_dict(row) for row in rows]
 
+    def get_active_reservation(self, reservation_id: str) -> ReservationRecord | None:
+        rows = self._read_yaml_list(self.active_file)
+        for row in rows:
+            if str(row.get("reservation_id")) == reservation_id:
+                return ReservationRecord.from_dict(row)
+        return None
+
     def get_closed_reservations(self) -> list[ReservationRecord]:
         rows = self._read_yaml_list(self.closed_file)
         return [ReservationRecord.from_dict(row) for row in rows]
@@ -179,8 +194,10 @@ class ReservationYamlRepository:
         end: datetime,
         request_text: str | None = None,
         now: datetime | None = None,
+        owner: str = OWNER_SELF,
     ) -> ReservationRecord:
         resource = _normalize_resource_name(resource)
+        owner = _normalize_owner(owner)
         effective_now = now or datetime.now()
         start, end = _normalize_reservation_range(start, end)
         start, end = _apply_same_day_business_end_cap(start, end, effective_now)
@@ -191,8 +208,10 @@ class ReservationYamlRepository:
 
         self.close_expired(effective_now)
 
-        active = self.get_active_reservations()
+        rows = self._read_yaml_list(self.active_file)
+        active = [ReservationRecord.from_dict(row) for row in rows]
         same_resource = [row for row in active if row.resource == resource]
+
         if not can_reserve(start, end, [Reservation(row.start, row.end) for row in same_resource]):
             raise ValueError("Reservation overlaps with an existing active reservation.")
 
@@ -203,9 +222,10 @@ class ReservationYamlRepository:
             end=end,
             created_at=effective_now,
             updated_at=effective_now,
+            owner=owner,
             request_text=request_text,
+            change_source="created",
         )
-        rows = self._read_yaml_list(self.active_file)
         rows.append(record.to_dict())
         self._write_yaml_list(self.active_file, rows)
 
@@ -216,6 +236,7 @@ class ReservationYamlRepository:
                 "resource": resource,
                 "start": record.start.isoformat(timespec="minutes"),
                 "end": record.end.isoformat(timespec="minutes"),
+                "owner": owner,
                 "request_text": request_text,
             },
             effective_now,
@@ -230,6 +251,7 @@ class ReservationYamlRepository:
         start: datetime | None = None,
         end: datetime | None = None,
         now: datetime | None = None,
+        request_text: str | None = None,
     ) -> ReservationRecord:
         effective_now = now or datetime.now()
         self.close_expired(effective_now)
@@ -264,7 +286,9 @@ class ReservationYamlRepository:
             end=new_end,
             created_at=current.created_at,
             updated_at=effective_now,
-            request_text=current.request_text,
+            owner=current.owner,
+            request_text=request_text if request_text is not None else current.request_text,
+            change_source="updated",
         )
         rows[found_index] = updated.to_dict()
         self._write_yaml_list(self.active_file, rows)
@@ -280,6 +304,197 @@ class ReservationYamlRepository:
             effective_now,
         )
         return updated
+
+    def delete_reservation(
+        self,
+        reservation_id: str,
+        *,
+        now: datetime | None = None,
+    ) -> ReservationRecord:
+        effective_now = now or datetime.now()
+        rows = self._read_yaml_list(self.active_file)
+        remaining: list[dict[str, Any]] = []
+        deleted: ReservationRecord | None = None
+
+        for row in rows:
+            if str(row.get("reservation_id")) == reservation_id:
+                deleted = ReservationRecord.from_dict(row)
+            else:
+                remaining.append(row)
+
+        if deleted is None:
+            raise ValueError("reservation_id not found in active reservations")
+
+        self._write_yaml_list(self.active_file, remaining)
+        self._log_event(
+            "RESERVATION_DELETED",
+            {
+                "reservation_id": reservation_id,
+                "resource": deleted.resource,
+                "start": deleted.start.isoformat(timespec="minutes"),
+                "end": deleted.end.isoformat(timespec="minutes"),
+                "owner": deleted.owner,
+            },
+            effective_now,
+        )
+        return deleted
+
+    def find_self_owned_overlaps(
+        self,
+        resource: str,
+        start: datetime,
+        end: datetime,
+        now: datetime | None = None,
+    ) -> list[ReservationRecord]:
+        resource = _normalize_resource_name(resource)
+        effective_now = now or datetime.now()
+        start, end = _normalize_reservation_range(start, end)
+        start, end = _apply_same_day_business_end_cap(start, end, effective_now)
+        self.close_expired(effective_now)
+
+        overlaps: list[ReservationRecord] = []
+        for record in self.get_active_reservations():
+            if record.resource != resource or record.owner != OWNER_SELF:
+                continue
+            if _intervals_overlap(record.start, record.end, start, end):
+                overlaps.append(record)
+        return overlaps
+
+    def merge_self_owned_reservations(
+        self,
+        resource: str,
+        start: datetime,
+        end: datetime,
+        reservation_ids: list[str],
+        *,
+        request_text: str | None = None,
+        now: datetime | None = None,
+    ) -> ReservationRecord:
+        resource = _normalize_resource_name(resource)
+        effective_now = now or datetime.now()
+        start, end = _normalize_reservation_range(start, end)
+        start, end = _apply_same_day_business_end_cap(start, end, effective_now)
+        self.close_expired(effective_now)
+
+        rows = self._read_yaml_list(self.active_file)
+        records_to_merge: list[ReservationRecord] = []
+        remaining_rows: list[dict[str, Any]] = []
+        id_set = {str(value) for value in reservation_ids}
+
+        for row in rows:
+            rid = str(row.get("reservation_id"))
+            if rid in id_set:
+                record = ReservationRecord.from_dict(row)
+                if record.owner != OWNER_SELF or record.resource != resource:
+                    raise ValueError("선택한 예약을 병합할 수 없습니다.")
+                records_to_merge.append(record)
+            else:
+                remaining_rows.append(row)
+
+        if not records_to_merge:
+            raise ValueError("병합할 예약을 찾지 못했습니다.")
+
+        merged_start = min([start] + [record.start for record in records_to_merge])
+        merged_end = max([end] + [record.end for record in records_to_merge])
+        _validate_bookable_request(merged_start, merged_end, effective_now)
+
+        primary = min(records_to_merge, key=lambda record: (record.start, record.created_at))
+        merged_request_text = request_text or primary.request_text
+        merged_record = ReservationRecord(
+            reservation_id=primary.reservation_id,
+            resource=resource,
+            start=merged_start,
+            end=merged_end,
+            created_at=primary.created_at,
+            updated_at=effective_now,
+            owner=OWNER_SELF,
+            request_text=merged_request_text,
+            change_source="merged",
+        )
+
+        remaining_rows.append(merged_record.to_dict())
+        self._write_yaml_list(self.active_file, remaining_rows)
+
+        self._log_event(
+            "RESERVATION_MERGED",
+            {
+                "reservation_id": merged_record.reservation_id,
+                "resource": resource,
+                "start": merged_start.isoformat(timespec="minutes"),
+                "end": merged_end.isoformat(timespec="minutes"),
+                "owner": OWNER_SELF,
+                "merged_count": len(records_to_merge) + 1,
+                "request_text": merged_request_text,
+            },
+            effective_now,
+        )
+        return merged_record
+
+    def replace_self_owned_reservations(
+        self,
+        resource: str,
+        start: datetime,
+        end: datetime,
+        reservation_ids: list[str],
+        *,
+        request_text: str | None = None,
+        now: datetime | None = None,
+    ) -> ReservationRecord:
+        resource = _normalize_resource_name(resource)
+        effective_now = now or datetime.now()
+        start, end = _normalize_reservation_range(start, end)
+        start, end = _apply_same_day_business_end_cap(start, end, effective_now)
+        if start >= end:
+            raise ValueError("Reservation start time must be earlier than end time.")
+        _validate_bookable_request(start, end, effective_now)
+        self.close_expired(effective_now)
+
+        rows = self._read_yaml_list(self.active_file)
+        id_set = {str(value) for value in reservation_ids}
+        filtered_rows: list[dict[str, Any]] = []
+        removed_ids: set[str] = set()
+        for row in rows:
+            rid = str(row.get("reservation_id"))
+            if rid in id_set:
+                record = ReservationRecord.from_dict(row)
+                if record.owner != OWNER_SELF or record.resource != resource:
+                    raise ValueError("선택한 예약을 대체할 수 없습니다.")
+                removed_ids.add(rid)
+            else:
+                filtered_rows.append(row)
+
+        if not removed_ids:
+            raise ValueError("대체할 예약을 찾지 못했습니다.")
+
+        record = ReservationRecord(
+            reservation_id=str(uuid4()),
+            resource=resource,
+            start=start,
+            end=end,
+            created_at=effective_now,
+            updated_at=effective_now,
+            owner=OWNER_SELF,
+            request_text=request_text,
+            change_source="replaced",
+        )
+
+        filtered_rows.append(record.to_dict())
+        self._write_yaml_list(self.active_file, filtered_rows)
+
+        self._log_event(
+            "RESERVATION_REPLACED",
+            {
+                "reservation_id": record.reservation_id,
+                "resource": resource,
+                "start": start.isoformat(timespec="minutes"),
+                "end": end.isoformat(timespec="minutes"),
+                "owner": OWNER_SELF,
+                "replaced_count": len(removed_ids),
+                "request_text": request_text,
+            },
+            effective_now,
+        )
+        return record
 
     def close_expired(self, now: datetime | None = None) -> int:
         effective_now = now or datetime.now()
@@ -405,6 +620,7 @@ class ReservationYamlRepository:
                     end=end,
                     created_at=effective_now,
                     updated_at=effective_now,
+                    owner=OWNER_EXTERNAL,
                 )
             )
 
@@ -455,6 +671,7 @@ def generate_test_reservations(start_date: date) -> list[ReservationRecord]:
             end=end,
             created_at=now,
             updated_at=now,
+            owner=OWNER_EXTERNAL,
         )
         records.append(record)
 
@@ -553,6 +770,7 @@ def generate_large_test_reservations(
                     end=end,
                     created_at=now,
                     updated_at=now,
+                    owner=OWNER_EXTERNAL,
                 )
             )
 
@@ -847,6 +1065,17 @@ def _normalize_resource_name(resource: str | None) -> str:
     if not normalized:
         raise ValueError("resource must not be empty")
     return normalized
+
+
+def _normalize_owner(owner: str | None) -> str:
+    normalized = (owner or "").strip()
+    if normalized in _VALID_OWNERS:
+        return normalized
+    return OWNER_EXTERNAL
+
+
+def _intervals_overlap(a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime) -> bool:
+    return a_start < b_end and b_start < a_end
 
 
 def _build_weighted_resource_pool(resources: list[str]) -> list[tuple[str, int]]:

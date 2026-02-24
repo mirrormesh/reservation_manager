@@ -10,6 +10,7 @@ from reservation_manager import (
     reserve_from_text,
     reserve_with_conflict_avoidance,
 )
+from reservation_manager.yaml_store import OWNER_EXTERNAL, OWNER_SELF
 
 
 class TestGenerateTestReservations(unittest.TestCase):
@@ -108,6 +109,133 @@ class TestReservationYamlRepository(unittest.TestCase):
             self.assertEqual(len(active), 30)
             self.assertEqual(len(closed), 0)
 
+    def test_seed_test_data_marks_records_as_external(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = ReservationYamlRepository(Path(temp_dir) / "data")
+            repo.seed_test_data(now=datetime(2026, 2, 24, 9, 0), overwrite=True)
+
+            active = repo.get_active_reservations()
+            self.assertGreater(len(active), 0)
+            self.assertTrue(all(record.owner == OWNER_EXTERNAL for record in active))
+
+    def test_add_reservation_defaults_to_self_owner(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = ReservationYamlRepository(Path(temp_dir) / "data")
+            created = repo.add_reservation(
+                "회의실1",
+                datetime(2026, 2, 24, 10, 0),
+                datetime(2026, 2, 24, 11, 0),
+                now=datetime(2026, 2, 24, 9, 0),
+            )
+
+            self.assertEqual(created.owner, OWNER_SELF)
+
+    def test_delete_reservation_removes_record(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = ReservationYamlRepository(Path(temp_dir) / "data")
+            created = repo.add_reservation(
+                "회의실2",
+                datetime(2026, 2, 24, 15, 0),
+                datetime(2026, 2, 24, 16, 0),
+                now=datetime(2026, 2, 24, 9, 0),
+            )
+
+            deleted = repo.delete_reservation(created.reservation_id, now=datetime(2026, 2, 24, 9, 30))
+            self.assertEqual(deleted.reservation_id, created.reservation_id)
+            self.assertEqual(len(repo.get_active_reservations()), 0)
+
+    def test_add_reservation_requires_resolution_for_self_overlap(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = ReservationYamlRepository(Path(temp_dir) / "data")
+            repo.add_reservation(
+                "회의실1",
+                datetime(2026, 2, 24, 10, 0),
+                datetime(2026, 2, 24, 11, 0),
+                now=datetime(2026, 2, 24, 9, 0),
+            )
+
+            with self.assertRaises(ValueError):
+                repo.add_reservation(
+                    "회의실1",
+                    datetime(2026, 2, 24, 10, 30),
+                    datetime(2026, 2, 24, 12, 0),
+                    now=datetime(2026, 2, 24, 9, 30),
+                )
+
+    def test_add_reservation_does_not_merge_other_owner(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = ReservationYamlRepository(Path(temp_dir) / "data")
+            repo.add_reservation(
+                "회의실1",
+                datetime(2026, 2, 24, 10, 0),
+                datetime(2026, 2, 24, 11, 0),
+                now=datetime(2026, 2, 24, 9, 0),
+                owner=OWNER_EXTERNAL,
+            )
+
+            with self.assertRaises(ValueError):
+                repo.add_reservation(
+                    "회의실1",
+                    datetime(2026, 2, 24, 10, 30),
+                    datetime(2026, 2, 24, 11, 30),
+                    now=datetime(2026, 2, 24, 9, 30),
+                )
+
+    def test_find_self_owned_overlaps_returns_records(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = ReservationYamlRepository(Path(temp_dir) / "data")
+            now = datetime(2026, 2, 24, 9, 0)
+            repo.add_reservation("회의실1", datetime(2026, 2, 25, 10, 0), datetime(2026, 2, 25, 11, 0), now=now)
+
+            overlaps = repo.find_self_owned_overlaps(
+                "회의실1",
+                datetime(2026, 2, 25, 10, 30),
+                datetime(2026, 2, 25, 11, 30),
+                now=now,
+            )
+
+            self.assertEqual(len(overlaps), 1)
+            self.assertEqual(overlaps[0].resource, "회의실1")
+
+    def test_merge_self_owned_reservations_combines_ranges(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = ReservationYamlRepository(Path(temp_dir) / "data")
+            now = datetime(2026, 2, 24, 9, 0)
+            first = repo.add_reservation("회의실1", datetime(2026, 2, 25, 9, 0), datetime(2026, 2, 25, 10, 0), now=now)
+            second = repo.add_reservation("회의실1", datetime(2026, 2, 25, 10, 0), datetime(2026, 2, 25, 10, 30), now=now)
+
+            merged = repo.merge_self_owned_reservations(
+                "회의실1",
+                datetime(2026, 2, 25, 9, 30),
+                datetime(2026, 2, 25, 11, 0),
+                [first.reservation_id, second.reservation_id],
+                now=now,
+            )
+
+            self.assertEqual(merged.start, datetime(2026, 2, 25, 9, 0))
+            self.assertEqual(merged.end, datetime(2026, 2, 25, 11, 0))
+            self.assertEqual(merged.change_source, "merged")
+            self.assertEqual(len(repo.get_active_reservations()), 1)
+
+    def test_replace_self_owned_reservations_creates_new_range(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo = ReservationYamlRepository(Path(temp_dir) / "data")
+            now = datetime(2026, 2, 24, 9, 0)
+            existing = repo.add_reservation("회의실1", datetime(2026, 2, 25, 9, 0), datetime(2026, 2, 25, 10, 0), now=now)
+
+            replaced = repo.replace_self_owned_reservations(
+                "회의실1",
+                datetime(2026, 2, 25, 13, 0),
+                datetime(2026, 2, 25, 14, 0),
+                [existing.reservation_id],
+                now=now,
+            )
+
+            self.assertEqual(replaced.start, datetime(2026, 2, 25, 13, 0))
+            self.assertEqual(replaced.end, datetime(2026, 2, 25, 14, 0))
+            self.assertEqual(replaced.change_source, "replaced")
+            self.assertEqual(len(repo.get_active_reservations()), 1)
+
     def test_reserve_from_text_creates_yaml_record(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = ReservationYamlRepository(Path(temp_dir) / "data")
@@ -153,7 +281,13 @@ class TestReservationYamlRepository(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = ReservationYamlRepository(Path(temp_dir) / "data")
             now = datetime(2026, 2, 24, 9, 0)
-            repo.add_reservation("회의실1", datetime(2026, 2, 24, 10, 0), datetime(2026, 2, 24, 11, 0), now=now)
+            repo.add_reservation(
+                "회의실1",
+                datetime(2026, 2, 24, 10, 0),
+                datetime(2026, 2, 24, 11, 0),
+                now=now,
+                owner=OWNER_EXTERNAL,
+            )
 
             result = reserve_with_conflict_avoidance(
                 repo,
@@ -171,7 +305,13 @@ class TestReservationYamlRepository(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             repo = ReservationYamlRepository(Path(temp_dir) / "data")
             now = datetime(2026, 2, 24, 9, 0)
-            repo.add_reservation("회의실1", datetime(2026, 2, 24, 10, 0), datetime(2026, 2, 24, 11, 0), now=now)
+            repo.add_reservation(
+                "회의실1",
+                datetime(2026, 2, 24, 10, 0),
+                datetime(2026, 2, 24, 11, 0),
+                now=now,
+                owner=OWNER_EXTERNAL,
+            )
 
             result = reserve_with_conflict_avoidance(
                 repo,
