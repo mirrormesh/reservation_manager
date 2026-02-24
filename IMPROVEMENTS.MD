@@ -9,6 +9,58 @@ YAML 기반 자원 예약 시스템입니다. 회의실(10개)과 테스트단�
 
 본 과제에서는 Python과 Node.js를 의도적으로 동시에 구현했습니다. 목적은 “AI 기반 개발에서 다중 언어 병행 구현이 실제로 정합성/유지보수성 측면에서 어느 수준까지 가능한지”를 검증하는 것이었습니다.
 
+## 진행 단계별 업데이트 (검증 반영)
+
+아래는 실제 코드/스크립트 상태를 기준으로 2026-02-24 시점에 확인한 개선 내역입니다.
+
+### 1) 실행 환경/운영 스크립트 정비
+
+- `run_windows_check.bat`: 가상환경/의존성/테스트/퀵체크를 원클릭 실행하도록 정비
+- `run_windows_python.bat`: Python UI 실행 표준 스크립트로 정리
+- `run_windows_node.bat`: `test`, `server`, `all` 모드 지원
+
+### 2) Node 서버 + Python 백엔드 브리지 구축
+
+- `nodejs/server.js`에서 `/api/schedule`, `/api/reserve/options`, `/api/reserve/commit`를 Python 브리지(`scripts/node_python_bridge.py`)로 연동
+- Node UI에서도 Python과 동일 예약 플로우를 비교 가능한 구조로 통합
+
+### 3) 자연어 파서 확장 (Python/Node 동기화)
+
+- 상대시간 표현 지원: `오늘/내일`, `오전/오후`, `N시간`
+- Python(`reservation_manager/natural_language.py`)과 Node(`nodejs/reservationParser.js`) 파싱 규칙 정합성 유지
+
+### 4) 시각화/스케줄 계산 개선
+
+- 당일(`day`) 기간은 현재 시각부터 표시
+- `is_currently_occupied` 필드 추가 및 현재 점유 리소스 라벨 강조
+- `occupancy_rate`를 남은 예약 가능 시간 기준(분 단위)으로 계산해 색 농도 왜곡 완화
+
+### 5) 교차 조합 테스트 가능화 (UI/Backend 분리)
+
+- `apiBase` 쿼리 파라미터로 UI가 다른 백엔드를 호출 가능
+- CORS/Preflight 처리 추가
+	- Python: `reservation_manager/web_app.py`
+	- Node: `nodejs/server.js`
+- 입력바 하단에 상대 UI 자동 감지 링크 표시(접속 가능 시에만 노출)
+
+### 6) 프론트 라벨/문구 통일
+
+- Python UI 제목: `Python Frontend`
+- Node UI 제목: `Node.js Frontend`
+- 상대 UI 링크 문구를 비교 실행 관점으로 개선
+
+### 7) 최종 검증 결과
+
+- Python 테스트: `33 passed`
+- Node 테스트: `7 passed`
+- Node API preflight(`OPTIONS`) 및 CORS 헤더 동작 확인
+- 교차 조합 접속 경로 문서화 완료
+
+### 8) 문서 상태
+
+- `README.md` 유지
+- `IMPROVEMENTS.md` 별도 유지(본 진행 내역 포함)
+
 ## 과제 시사점
 
 - **AI 생산성 덕분에 Python/Node.js 동시 구현 자체는 과거보다 현실적으로 수행 가능**했습니다.
