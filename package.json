@@ -1,0 +1,10 @@
+{
+  "name": "reservation-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reservation overlap detection with rule-based natural language parsing (Python + Node.js)",
+  "scripts": {
+    "test:node": "node --test nodejs/test/*.test.js",
+    "test:python": "py -m unittest discover -s tests -v"
+  }
+}

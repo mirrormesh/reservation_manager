@@ -39,11 +39,30 @@ newStart < existEnd  AND  newEnd > existStart
   - `has_time_overlap(...)`
   - `can_reserve(...)`
 
+### 자연어 예약 기능 (LLM 미사용)
+
+규칙 기반(정규표현식) 파서를 사용해 자연어 입력에서 예약 정보를 추출합니다.
+
+- Python: `reservation_manager/natural_language.py`
+  - `parse_reservation_request(text)`
+  - `can_reserve_from_text(text, existing_reservations)`
+- Node.js: `nodejs/reservationParser.js`
+  - `parseReservationRequest(text)`
+  - `canReserveFromText(text, existingReservations)`
+
+지원 예시 입력:
+
+- `회의실A 2026-02-24 10:00~11:00 예약`
+- `테스트 단말기 2026/02/24 14:30부터 15:30까지 예약해줘`
+
 ---
 
 ## 3) 테스트 코드
 
-테스트 파일: `tests/test_booking.py`
+테스트 파일:
+
+- `tests/test_booking.py`
+- `tests/test_natural_language.py`
 
 ### 검증한 엣지 케이스
 
@@ -65,7 +84,13 @@ newStart < existEnd  AND  newEnd > existStart
 프로젝트 루트(`reservation_manager`)에서 아래 명령을 실행하세요.
 
 ```bash
-python -m unittest discover -s tests -v
+py -m unittest discover -s tests -v
+```
+
+Node.js 테스트는 아래 명령으로 실행합니다.
+
+```bash
+node --test nodejs/test/*.test.js
 ```
 
 ---
@@ -74,10 +99,17 @@ python -m unittest discover -s tests -v
 
 ```text
 reservation_manager/
+├─ nodejs/
+│  ├─ reservationParser.js
+│  └─ test/
+│     └─ reservationParser.test.js
+├─ package.json
 ├─ reservation_manager/
 │  ├─ __init__.py
-│  └─ booking.py
+│  ├─ booking.py
+│  └─ natural_language.py
 ├─ tests/
-│  └─ test_booking.py
+│  ├─ test_booking.py
+│  └─ test_natural_language.py
 └─ README.md
 ```
