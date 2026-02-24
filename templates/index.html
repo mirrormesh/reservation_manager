@@ -188,6 +188,8 @@
         myReservations: [],
         optionContext: "avoidance",
       };
+      const SCHEDULE_REFRESH_INTERVAL_MS = 5000;
+      let scheduleRefreshInFlight = false;
 
       function normalizeApiBase(rawValue) {
         const value = String(rawValue || "").trim();
@@ -546,12 +548,12 @@
           const response = await fetch(apiUrl("/api/my-reservations"));
           const payload = await response.json().catch(() => ({}));
           if (!response.ok || !payload.ok) {
-            throw new Error(payload.message || "내 예약을 불러오지 못했습니다.");
+            throw new Error(payload.message || "내 예약을 불러오는 중입니다.");
           }
           state.myReservations = payload.reservations || [];
           renderMyReservations();
         } catch (error) {
-          renderMyReservations(error?.message || "내 예약을 불러오지 못했습니다.");
+          renderMyReservations(error?.message || "내 예약을 불러오는 중입니다.");
           throw error;
         }
       }
@@ -730,7 +732,7 @@
         const response = await fetch(apiUrl(`/api/schedule?period=${state.period}`));
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload || !payload.window_start || !payload.window_end) {
-          const message = payload && payload.message ? payload.message : "스케줄을 불러오지 못했습니다.";
+          const message = payload && payload.message ? payload.message : "스케줄을 불러오는 중입니다.";
           throw new Error(message);
         }
         state.windowStart = toDate(payload.window_start);
@@ -745,6 +747,20 @@
         drawTicks("deviceTicks", state.windowStart, state.windowEnd);
         renderRows("rooms", payload.rooms, "room");
         renderRows("devices", payload.devices, "device");
+      }
+
+      async function scheduleAutoRefreshTick() {
+        if (scheduleRefreshInFlight) {
+          return;
+        }
+        scheduleRefreshInFlight = true;
+        try {
+          await loadSchedule();
+        } catch (error) {
+          setMessage(error?.message || "스케줄을 불러오는 중입니다.");
+        } finally {
+          scheduleRefreshInFlight = false;
+        }
       }
 
       async function commitReservationOption(option) {
@@ -856,6 +872,9 @@
       setInterval(() => {
         refreshPeerLink();
       }, 15 * 1000);
+      setInterval(() => {
+        scheduleAutoRefreshTick();
+      }, SCHEDULE_REFRESH_INTERVAL_MS);
       updatePeriodButtons();
       (async () => {
         try {

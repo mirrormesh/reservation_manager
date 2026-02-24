@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 import random
 import shutil
+import time
 from uuid import uuid4
 
 import holidays as pyholidays
@@ -136,15 +137,20 @@ class ReservationYamlRepository:
         return sanitized
 
     def _write_yaml_list(self, path: Path, rows: list[dict[str, Any]]) -> None:
-        temp_path = path.with_suffix(path.suffix + ".tmp")
-        try:
-            temp_path.write_text(yaml.safe_dump(rows, allow_unicode=True, sort_keys=False), encoding="utf-8")
-            temp_path.replace(path)
-        except OSError as error:
-            raise ReservationStorageError(f"Failed to write YAML file: {path}") from error
-        finally:
-            if temp_path.exists():
+        last_error: OSError | None = None
+        for attempt in range(3):
+            temp_path = path.with_name(f"{path.name}.{uuid4().hex}.tmp")
+            try:
+                temp_path.write_text(yaml.safe_dump(rows, allow_unicode=True, sort_keys=False), encoding="utf-8")
+                temp_path.replace(path)
                 temp_path.unlink(missing_ok=True)
+                return
+            except OSError as error:
+                last_error = error
+                temp_path.unlink(missing_ok=True)
+                if attempt < 2:
+                    time.sleep(0.05 * (attempt + 1))  # retry if another process temporarily holds the file
+        raise ReservationStorageError(f"Failed to write YAML file: {path}") from last_error
 
     def _recover_corrupted_yaml(self, path: Path, error: Exception) -> None:
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")

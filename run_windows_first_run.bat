@@ -32,6 +32,9 @@ echo.
 
 cd /d "%~dp0"
 set "PYTHONPATH=%CD%"
+set "WORKSPACE_DIR=%CD%"
+
+call :stop_related_processes
 
 set "PY_CMD="
 call :detect_python
@@ -163,6 +166,14 @@ exit /b 1
 
 :END
 endlocal
+exit /b 0
+
+:stop_related_processes
+echo [STEP] Checking for previously running Reservation Manager modules...
+powershell -NoProfile -Command "try { $workspace = '%WORKSPACE_DIR%'; $regex = [regex]::Escape($workspace); $targets = @('python.exe','pythonw.exe','node.exe'); $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and $_.CommandLine -match $regex -and $targets -contains $_.Name }; if ($procs) { foreach ($proc in $procs) { try { Stop-Process -Id $proc.ProcessId -Force -ErrorAction Stop; Write-Host ('[INFO] Stopped ' + $proc.Name + ' (PID ' + $proc.ProcessId + ')'); } catch { Write-Warning ('Failed to stop PID ' + $proc.ProcessId + ': ' + $_.Exception.Message) } } } else { Write-Host '[INFO] No related processes detected.' } exit 0 } catch { Write-Warning ('Process cleanup skipped: ' + $_.Exception.Message); exit 0 }"
+if errorlevel 1 (
+    echo [WARN] Unable to verify running processes. Continuing...
+)
 exit /b 0
 
 :detect_python
